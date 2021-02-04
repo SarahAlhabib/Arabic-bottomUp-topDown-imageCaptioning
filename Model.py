@@ -7,9 +7,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Decoder(nn.Module):
-    """
-    Decoder.
-    """
+  
 
     def __init__(self, attention_dim, embed_dim, decoder_dim, vocab_size, features_dim=2048, dropout=0.5): ## 
        
