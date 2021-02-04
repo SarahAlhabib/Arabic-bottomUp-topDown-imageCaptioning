@@ -5,7 +5,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Decoder(nn.Module):
-  
+    
 
     def __init__(self, attention_dim, embed_dim, decoder_dim, vocab_size, features_dim=2048, dropout=0.5): ## 
        
@@ -29,7 +29,6 @@ class Decoder(nn.Module):
         self.att2 = nn.Linear(decoder_dim, attention_dim, bias=False)
         self.att3 = nn.Linear(attention_dim, 1)   
         self.Tanh = nn.Tanh()
-        #self.w_a = nn.Linear(attention_dim, 1, bias=False)
         # self.dropout = nn.Dropout(p=dropout)
         self.att4 = nn.Softmax(dim=-1)
 
@@ -88,7 +87,6 @@ class Decoder(nn.Module):
         h2, c2 = self.init_hidden_state(batch_size)  # (batch_size, decoder_dim)
         
         # We won't decode at the <end> position, since we've finished generating as soon as we generate <end>
-        # So, decoding lengths are actual lengths - 1
         decode_lengths = (caption_lengths - 1).tolist()
 
         # Create tensors to hold word predicion scores
@@ -106,7 +104,7 @@ class Decoder(nn.Module):
             preds1 = self.word(self.att4(h1))
 
             h2,c2 = self.language_model(torch.cat([attention_weighted_encoding[:batch_size_t],h1[:batch_size_t]], dim=1),(h2[:batch_size_t], c2[:batch_size_t]))
-            preds = self.act(self.dropout(h2))  # (batch_size_t, vocab_size)
+            preds = self.act(self.word(h2))  # (batch_size_t, vocab_size)
             predictions[:batch_size_t, t, :] = preds
             predictions1[:batch_size_t, t, :] = preds1
 
