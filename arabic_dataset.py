@@ -73,7 +73,7 @@ import pickle
 
 import numpy as np
 from tqdm import tqdm_notebook, tnrange
-import keras
+#import keras
 #from keras_tqdm import TQDMNotebookCallback
 # for arabic text with matplotlib
 #from bidi import algorithm as bidialg
@@ -180,10 +180,9 @@ def tokenizeText(text):
   return text
 
 text = "السلام عليكم ورحمة الله"
-print(tokenizeText(captions[k]))
+print(tokenizeText(text))
 
-add_start_end_to_captions(captions)
-print(captions[k])
+
 
 
 
