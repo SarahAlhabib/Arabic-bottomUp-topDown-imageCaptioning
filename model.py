@@ -1,9 +1,14 @@
+"""
+this code is adaoted from https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning/blob/cc9c7e2f4017938d414178d3781fed8dbe442852/models.py
+
+"""
 import torch
 from torch import nn
 import torchvision
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class Decoder(nn.Module):
     
@@ -39,8 +44,6 @@ class Decoder(nn.Module):
     
         self.init_weights()  # initialize some layers with the uniform distribution
 
-
-
     def init_weights(self):
         """
         Initializes some parameters with values from the uniform distribution, for easier convergence.
@@ -54,6 +57,14 @@ class Decoder(nn.Module):
         Loads embedding layer with pre-trained embeddings.
         """
         self.embedding.weight = nn.Parameter(embeddings)
+
+    def fine_tune_embeddings(self, fine_tune=True):
+        """
+        Allow fine-tuning of embedding layer? (Only makes sense to not-allow if using pre-trained embeddings).
+        :param fine_tune: Allow?
+        """
+        for p in self.embedding.parameters():
+            p.requires_grad = fine_tune
 
     def init_hidden_state(self,batch_size):
         """
