@@ -1,6 +1,5 @@
 """
-this code is adaoted from https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning/blob/cc9c7e2f4017938d414178d3781fed8dbe442852/models.py
-
+this code is adapted from https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning/blob/cc9c7e2f4017938d414178d3781fed8dbe442852/models.py
 """
 import torch
 from torch import nn
