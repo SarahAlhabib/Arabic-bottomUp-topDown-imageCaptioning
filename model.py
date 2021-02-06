@@ -119,9 +119,9 @@ class Decoder(nn.Module):
 
             h1,c1 = self.top_down_attention(torch.cat([h2[:batch_size_t],image_features_mean[:batch_size_t],embeddings[:batch_size_t, t, :]], dim=1),(h1[:batch_size_t], c1[:batch_size_t]))
 
-             at1 = self.att1(image_features[:batch_size_t])  # (batch_size, 36, attention_dim), att encoder 
-             at2 = self.att2(h1[:batch_size_t])              # (batch_size, attention_dim) , att decoder 
-             at3 = self.att3(self.dropout(self.tanh(at1 + at2.unsqueeze(1)))).squeeze(2)  # (batch_size, 36)
+            at1 = self.att1(image_features[:batch_size_t])  # (batch_size, 36, attention_dim), att encoder
+            at2 = self.att2(h1[:batch_size_t])              # (batch_size, attention_dim) , att decoder
+            at3 = self.att3(self.dropout(self.tanh(at1 + at2.unsqueeze(1)))).squeeze(2)  # (batch_size, 36)
             alpha= self.att4(at3)  
             attention_weighted_encoding = (image_features * alpha.unsqueeze(2)).sum(dim=1) 
             preds1 = self.word(self.dropout(h1))
@@ -132,4 +132,5 @@ class Decoder(nn.Module):
             predictions [:batch_size_t, t, :] = preds
             predictions1[:batch_size_t, t, :] = preds1
 
-        return predictions, predictions1,encoded_captions, decode_lengths, sort_ind
+            return predictions, predictions1, encoded_captions, decode_lengths, sort_ind
+
