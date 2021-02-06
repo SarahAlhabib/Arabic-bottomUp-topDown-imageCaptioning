@@ -4,10 +4,11 @@ this code is adapted from https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Imag
 import torch
 import torch.optim
 import os
+import time
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from model import Decoder
-from utils import adjust_learning_rate, save_checkpoint, clip_gradient
+from utils import adjust_learning_rate, save_checkpoint, AverageMeter, clip_gradient
 
 caption_file = ''
 images_features_file = ''
@@ -46,11 +47,14 @@ def main():
 
     # Initialize / load checkpoint
     if checkpoint is None:
-        decoder = Decoder(attention_dim,emb_dim,decoder_dim,vocab_size=vocab_size,features_dim=2048,dropout=dropout)
+        decoder = Decoder(attention_dim, emb_dim, decoder_dim,vocab_size=vocab_size, features_dim=2048, dropout=dropout)
+        # embeddings
+        #decoder.load_pretrained_embeddings()
+        #decoder.fine_tune_embeddings(False)
+
         decoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, decoder.parameters()),
                                              lr=decoder_lr)
-        # embedding
-        # optimizer?
+
     else:
         checkpoint = torch.load(checkpoint)
         start_epoch = checkpoint['epoch'] + 1
@@ -95,4 +99,80 @@ def main():
 
 
 def train(train_loader, decoder, criterion, decoder_optimizer, epoch):
-    return
+    """
+        Performs one epoch's training.
+        :param train_loader: DataLoader for training data
+        :param encoder: encoder model
+        :param decoder: decoder model
+        :param criterion: loss layer
+        :param encoder_optimizer: optimizer to update encoder's weights (if fine-tuning)
+        :param decoder_optimizer: optimizer to update decoder's weights
+        :param epoch: epoch number
+        """
+
+    decoder.train()  # train mode (dropout and batchnorm is used)
+
+    batch_time = AverageMeter()  # forward prop. + back prop. time
+    data_time = AverageMeter()  # data loading time
+    losses = AverageMeter()  # loss (per word decoded)
+    top5accs = AverageMeter()  # top5 accuracy
+
+    start = time.time()
+
+    for i, (imgs, caps, caplens) in enumerate(train_loader()):
+        data_time.update(time.time()-start)
+
+        # Move to GPU, if available
+        imgs = imgs.to(device)
+        caps = caps.to(device)
+        caplens = caplens.to(device)
+
+        # Forward
+        predictions, predictions1, encoded_captions, decode_lengths, sort_ind = decoder(imgs, caps, caplens)
+        #scores, caps_sorted, decode_lengths, alphas, sort_ind = decoder(imgs, caps, caplens)
+        # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
+        ## targets = caps_sorted[:, 1:]
+
+        # Remove timesteps that we didn't decode at, or are pads
+        ## pack_padded_sequence is an easy trick to do this
+        ## scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
+        ## targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+
+        # Calculate loss
+        loss = criterion(scores, targets)
+
+        # Backpropagation
+        decoder_optimizer.zero_grad()
+        loss.backward()
+
+        # Clip gradients
+        if grad_clip is not None:
+            clip_gradient(decoder_optimizer, grad_clip)
+
+        # Update weights
+        decoder_optimizer.step()
+
+        # Keep track of metrics
+        top5 = accuracy(scores, targets, 5)
+        losses.update(loss.item(), sum(decode_lengths))
+        top5accs.update(top5, sum(decode_lengths))
+        batch_time.update(time.time() - start)
+
+        start = time.time()
+
+        # Print status
+        if i % print_freq == 0:
+            print('Epoch: [{0}][{1}/{2}]\t'
+                  'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Data Load Time {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Top-5 Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(epoch, i, len(train_loader),
+                                                                          batch_time=batch_time,
+                                                                          data_time=data_time, loss=losses,
+                                                                          top5=top5accs))
+
+
+
+
+
+
