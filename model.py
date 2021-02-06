@@ -14,7 +14,6 @@ class Decoder(nn.Module):
        
         super(Decoder, self).__init__()
 
-
         self.features_dim = features_dim
         self.attention_dim = attention_dim
         self.embed_dim = embed_dim
