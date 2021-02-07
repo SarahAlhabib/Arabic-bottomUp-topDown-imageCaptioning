@@ -26,9 +26,9 @@ from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers, FastRC
 
 
 D2_ROOT = os.path.dirname(os.path.dirname(detectron2.__file__)) # Root of detectron2
-DATA_ROOT = os.getenv('COCO_IMG_ROOT', '/ssd-playpen/data/mscoco/images/')
-MIN_BOXES = 36
-MAX_BOXES = 36
+DATA_ROOT = os.getenv('FLICKR8K_IMG_ROOT', 'Dataset/Flicker8k_Dataset')
+MIN_BOXES = 10
+MAX_BOXES = 100
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--split', default='train2014', help='train2014, val2014')
@@ -197,7 +197,7 @@ def extract_feat(outfile, detector, pathXid):
 def load_image_ids(img_root, split_dir):
     """images in the same directory are in the same split"""
     pathXid = []
-    img_root = os.path.join(img_root, split_dir)
+    
     for name in os.listdir(img_root):
         idx = name.split(".")[0]
         pathXid.append(
@@ -248,7 +248,7 @@ def build_model():
         cfg.INPUT.MAX_SIZE_TEST = 1000
         cfg.MODEL.RPN.NMS_THRESH = 0.7
         # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-        cfg.MODEL.WEIGHTS = "http://nlp.cs.unc.edu/models/faster_rcnn_from_caffe.pkl"
+        cfg.MODEL.WEIGHTS = "http://nlp.cs.unc.edu/models/faster_rcnn_from_caffe_attr_original.pkl"
     else:
         assert False, "no this weight"
     detector = DefaultPredictor(cfg)
@@ -257,4 +257,4 @@ def build_model():
 if __name__ == "__main__":
     pathXid = load_image_ids(DATA_ROOT, args.split)     # Get paths and ids
     detector = build_model()
-    extract_feat('data/mscoco_imgfeat/%s_d2obj36_batch.tsv' % args.split, detector, pathXid)
+    extract_feat('flickr8k_features.tsv', detector, pathXid)
