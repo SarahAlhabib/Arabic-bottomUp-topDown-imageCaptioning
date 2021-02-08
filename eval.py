@@ -28,7 +28,8 @@ decoder.eval()
 # not consider about encoder phase
 nlgeval = NLGEval()  # loads the evaluator
 
-# Load word map (word2ix)
+# Load word map (word2ix) 
+# need modification here
 word_map_file = os.path.join(data_folder, 'WORDMAP_' + data_name + '.json')# line added , i think because the generated files by tsv.py
 with open(word_map_file, 'r') as j:
     word_map = json.load(j)
