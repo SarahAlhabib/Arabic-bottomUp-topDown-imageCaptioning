@@ -40,7 +40,6 @@ class Arabic_preprocessing:
         text = strip_tatweel(text) #remove tatweel 
         text = strip_tashkeel(text) #remove tashkeel
         text = re.sub(r'\bال(\w\w+)', r'\1', text)  # remove al ta3reef
-        text = re.sub(r'\sو(\w+)', r' و \1', text)   # to add space after 'و'
 
         return text
 
@@ -158,8 +157,24 @@ preprocess_captions(captions)
 print('captions preprocessed :)')
 print('after >>', captions[k])
 
+
+# يوضح أن (preprocess_captions(cpts)) تشتغل بشكل صحيح 
+re.search('\w+', ' 456')
+i = 0
+for k,v in captions.items():
+    print(v)
+    i += 1
+    if i == 10: break
+
+        
 add_start_end_to_captions(captions)
 
+for k,v in captions.items():
+    for cpt in v:
+        a = [w for w in cpt.split() if len(w)==1 and w!='و']
+        if len(a)>0: print(cpt)
+
+            
 top_k = 5000
 tokenizer = keras.preprocessing.text.Tokenizer(num_words=top_k,
                                                   oov_token="<unk>",
@@ -189,13 +204,6 @@ print(max_length)
 
 
 
-# يوضح أن (preprocess_captions(cpts)) تشتغل بشكل صحيح 
-re.search('\w+', ' 456')
-i = 0
-for k,v in captions.items():
-    print(v)
-    i += 1
-    if i == 10: break
 
         
 
