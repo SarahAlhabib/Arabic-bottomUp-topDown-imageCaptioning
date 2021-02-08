@@ -69,15 +69,13 @@ import matplotlib.pyplot as plt
 import string
 from string import punctuation
 import re
-import pickle
-
+import nltk
 import numpy as np
-from tqdm import tqdm_notebook, tnrange
-#import keras
-#from keras_tqdm import TQDMNotebookCallback
-# for arabic text with matplotlib
-#from bidi import algorithm as bidialg
-#import arabic_reshaper
+import torch
+from torch import nn
+import torchvision 
+from torchnlp.encoders.text import StaticTokenizerEncoder, stack_and_pad_tensors, pad_tensor
+import keras
 
 
 def load_data(filename):
@@ -142,80 +140,51 @@ def add_start_end_to_captions(cpts):
         image_captions = [start + ' ' + cpt + ' ' + end for cpt in v]
         cpts[k] = image_captions
 
-        
-   #convert from text to numbers
-def tokenizeText(text, cutoff_for_rare_words = 1):
-    """Function to convert text to numbers. Text must be tokenzied so that
-    test is presented as a list of words. The index number for a word
-    is based on its frequency (words occuring more often have a lower index).
-    If a word does not occur as many times as cutoff_for_rare_words,
-    then it is given a word index of zero. All rare words will be zero.
-    """
-    
-    # Flatten list if sublists are present
-    if len(text) > 1:
-        flat_text = [item for sublist in text for item in sublist]
-    else:
-        flat_text = text
-    
-    # get word freuqncy
-    fdist = nltk.FreqDist(flat_text)
-
-    # Convert to Pandas dataframe
-    df_fdist = pd.DataFrame.from_dict(fdist, orient='index')
-    df_fdist.columns = ['Frequency']
-
-    # Sort by word frequency
-    df_fdist.sort_values(by=['Frequency'], ascending=False, inplace=True)
-
-    # Add word index
-    number_of_words = df_fdist.shape[0]
-    df_fdist['word_index'] = list(np.arange(number_of_words)+1)
-
-    # replace rare words with index zero
-    frequency = df_fdist['Frequency'].values
-    word_index = df_fdist['word_index'].values
-    mask = frequency <= cutoff_for_rare_words
-    word_index[mask] = 0
-    df_fdist['word_index'] =  word_index
-    
-    # Convert pandas to dictionary
-    word_dict = df_fdist['word_index'].to_dict()
-    
-    # Use dictionary to convert words in text to numbers
-    text_numbers = []
-    for string in text:
-        string_numbers = [word_dict[word] for word in string]
-        text_numbers.append(string_numbers)  
-    
-    return (text_numbers)
-
-
-def save_desc(description, filename):
-  lines = list()
-  for K,desc_list in description.item():
-    for desc in  desc_lis :
-      lines.append(k+''+desc)
-  data =''.join(lines)
-  file=open(filename,'w')
-  file.write(data)
-  file.close()
-
-    
-    
     
     
 filename = "/content/Dataset/data/Flickr8k_text/Flickr8k.arabic.full.txt"
+
+
 captions_file_text = load_data(filename)
+
 captions = get_captions(captions_file_text)
 print('Captions #:', len(captions))
 print('Caption example:', list(captions.values())[0])
+
 
 k = '299178969_5ca1de8e40' #2660480624_45f88b3022
 print('before >>', captions[k])
 preprocess_captions(captions)
 print('captions preprocessed :)')
 print('after >>', captions[k])
+
+add_start_end_to_captions(captions)
+
+top_k = 5000
+tokenizer = keras.preprocessing.text.Tokenizer(num_words=top_k,
+                                                  oov_token="<unk>",
+                                                  filters='!"#$%&()*+.,-/:;=?@[\]^_`{|}~ ')
+tokenizer.fit_on_texts(captions[k])
+
+tokenizer.word_index['<pad>'] = 0
+tokenizer.index_word[0] = '<pad>'
+
+# Create the tokenized vectors
+train_seqs = tokenizer.texts_to_sequences(captions[k])
+
+# Pad each vector to the max_length of the captions
+# If you do not provide a max_length value, pad_sequences calculates it automatically
+cap_vector = keras.preprocessing.sequence.pad_sequences(train_seqs, padding='post')
+
+# Calculates the max_length, which is used to store the attention weights
+max_length = calc_max_length(train_seqs)
+
+
+print(captions[k])
+
+print(train_seqs)
+print(cap_vector)
+print(max_length)
 
 
 
@@ -229,25 +198,4 @@ for k,v in captions.items():
     if i == 10: break
 
         
-        
-        
-        
-def tokenizeText2(text):
-  text = nltk.word_tokenize(text)
-  return text
-
-text = "السلام عليكم ورحمة الله"
-print(tokenizeText(text))
-
-
-
-
-
-
-# An example tokenised list
-print(captions[k])
-text_numbers = tokenizeText(captions[k])
-print (text_numbers)
-
-
 
