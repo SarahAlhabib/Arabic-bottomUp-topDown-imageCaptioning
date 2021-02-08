@@ -11,6 +11,7 @@ from tqdm import tqdm
 from collections import Counter
 from random import seed, choice, sample
 import pickle
+import gensim
 
 
 
@@ -144,7 +145,6 @@ def create_input_files(dataset,karpathy_json_path,captions_per_image, min_word_f
         json.dump(test_image_det, j)
 
 
-
 def load_embeddings(emb_file, word_map):
     """
     Creates an embedding tensor for the specified word map, for loading into the model.
@@ -152,6 +152,18 @@ def load_embeddings(emb_file, word_map):
     :param word_map: word map
     :return: embeddings in the same order as the words in the word map, dimension of embeddings
     """
+    vocab = set(word_map.keys())
+    embeddings = torch.FloatTensor(len(vocab),300)
+    model = gensim.models.Word2Vec.load('www_cbow_300/www_cbow_300')
+
+    for i, word in enumerate(word_map.keys()):
+        if word not in model.vocabulary:
+            embeddings[i,:] = model.most_similar(word)
+        else:
+            embeddings[i, :] = model.wv(word)
+
+    return embeddings
+
 
 
 def adjust_learning_rate(optimizer, shrink_factor):

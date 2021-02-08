@@ -8,11 +8,12 @@ import time
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from model import Decoder
-from utils import adjust_learning_rate, save_checkpoint, AverageMeter, clip_gradient, accuracy
+from utils import load_embeddings, adjust_learning_rate, save_checkpoint, AverageMeter, clip_gradient, accuracy
 from nltk.translate.bleu_score import corpus_bleu
 
 caption_file = ''
 images_features_file = ''
+embeddings_file = ''
 
 # Model parameters
 emb_dim = 300  # dimension of word embeddings
@@ -43,15 +44,16 @@ def main():
 
     # Read word map
     vocab_size=0
-
+    word_map=...
     # read vocab
 
     # Initialize / load checkpoint
     if checkpoint is None:
         decoder = Decoder(attention_dim, emb_dim, decoder_dim,vocab_size=vocab_size, features_dim=2048, dropout=dropout)
         # embeddings
-        #decoder.load_pretrained_embeddings()
-        #decoder.fine_tune_embeddings(False)
+        embeddings = load_embeddings(embeddings_file,word_map)
+        decoder.load_pretrained_embeddings(embeddings)
+        decoder.fine_tune_embeddings(False)
 
         decoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, decoder.parameters()),
                                              lr=decoder_lr)
