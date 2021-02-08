@@ -173,13 +173,41 @@ for k,v in captions.items():
     for cpt in v:
         a = [w for w in cpt.split() if len(w)==1 and w!='و']
         if len(a)>0: print(cpt)
+            
+            
+  def get_vocabulary(cpts):
+    """retruns a list of all unique words in captions"""
+    captions_flattened = [cpt for image_captions in cpts.values() for cpt in image_captions]
+    all_captions = ' '.join(captions_flattened)
+    v = set(all_captions.split())
+    return sorted(list(v))
+
+vocabulary = get_vocabulary(captions)
+print('Vocabulary size (number of unique words):', len(vocabulary))
+
+def get_frequent_vocabulary(cpts, frequency=5):
+    """retruns a list of all unique words that appeared more than `frequency` times"""
+    captions_flattened = [cpt for image_captions in cpts.values() for cpt in image_captions]
+    all_captions = ' '.join(captions_flattened)
+    frequent_vocabulary = []
+    for i,v in enumerate(vocabulary):
+        if all_captions.count(v) >= frequency: frequent_vocabulary.append(v)
+    return frequent_vocabulary
+
+frequent_vocabulary = get_frequent_vocabulary(captions, 3)
+print('Frequent vocabulary size (number of unique words):', len(frequent_vocabulary))
+
+
+def calc_max_length(tensor):
+    return max(len(t) for t in tensor)
 
             
-top_k = 5000
-tokenizer = keras.preprocessing.text.Tokenizer(num_words=top_k,
+num_words = len(frequent_vocabulary) + 1
+tokenizer = keras.preprocessing.text.Tokenizer(num_words=num_words,
                                                   oov_token="<unk>",
                                                   filters='!"#$%&()*+.,-/:;=?@[\]^_`{|}~ ')
 tokenizer.fit_on_texts(captions[k])
+
 
 tokenizer.word_index['<pad>'] = 0
 tokenizer.index_word[0] = '<pad>'
