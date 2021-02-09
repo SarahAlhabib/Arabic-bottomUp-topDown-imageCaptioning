@@ -42,7 +42,7 @@ def main():
 
     global best_bleu4, epochs_since_improvement, checkpoint, start_epoch, data_name, word_map
 
-    # Read word map
+    # TODO: Read word map
     vocab_size=0
     word_map=...
     # read vocab
@@ -72,7 +72,7 @@ def main():
     # Loss function
     criterion = nn.CrossEntropyLoss().to(device)
 
-    # Custom dataloaders
+    # TODO: Custom dataloaders
     train_loader = DataLoader()
 
     # Epochs
