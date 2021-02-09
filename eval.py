@@ -28,7 +28,8 @@ decoder.eval()
 # not consider about encoder phase
 nlgeval = NLGEval()  # loads the evaluator
 
-# Load word map (word2ix)
+# Load word map (word2ix) 
+# need modification here
 word_map_file = os.path.join(data_folder, 'WORDMAP_' + data_name + '.json')# line added , i think because the generated files by tsv.py
 with open(word_map_file, 'r') as j:
     word_map = json.load(j)
@@ -90,7 +91,12 @@ def evaluate(beam_size):
             h1,c1 = decoder.top_down_attention(
                 torch.cat([h2,image_features_mean,embeddings], dim=1),
                 (h1,c1))  # (batch_size_t, decoder_dim)
-            attention_weighted_encoding = decoder.attention(image_features,h1)
+            at1 = decoder.att1(image_features)  
+            at2 = decoder.att2(h1)             
+            at3 = decoder.att3(decoder.dropout(decoder.tanh(at1 + at2.unsqueeze(1)))).squeeze(2)  # (batch_size, 36)
+            alpha= decoder.att4(at3)  
+            attention_weighted_encoding = (image_features * alpha.unsqueeze(2)).sum(dim=1) 
+            #attention_weighted_encoding = decoder.attention(image_features,h1)
             h2,c2 = decoder.language_model(
                 torch.cat([attention_weighted_encoding,h1], dim=1),(h2,c2))
 
