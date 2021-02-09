@@ -88,7 +88,6 @@ class Decoder(nn.Module):
         vocab_size = self.vocab_size
 
          # Flatten image
-        # image_features.mean(0).to(device), better to done in __getitem__()
         image_features_mean = image_features.mean(1).to(device)  # (batch_size, num_pixels, encoder_dim)
 
         # Sort input data
