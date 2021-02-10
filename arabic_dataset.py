@@ -201,19 +201,30 @@ print('Frequent vocabulary size (number of unique words):', len(frequent_vocabul
 def calc_max_length(tensor):
     return max(len(t) for t in tensor)
 
-            
+
+y = []
+for k,image_captions in captions.items():
+    for image_caption in image_captions:
+        y.append(image_caption)
+print(len(y))#24273
+
+
 num_words = len(frequent_vocabulary) + 1
-tokenizer = keras.preprocessing.text.Tokenizer(num_words=num_words,
-                                                  oov_token="<unk>",
-                                                  filters='!"#$%&()*+.,-/:;=?@[\]^_`{|}~ ')
-tokenizer.fit_on_texts(captions[k])
+tokenizer = keras.preprocessing.text.Tokenizer(num_words=num_words, oov_token='<UNK>', lower=False, filters='') # num_words=num_words, 
+tokenizer.fit_on_texts(y)
+tokenizer.word_index['<PAD>'] = 0
+##### fix for keeping only most common `num_words`
+tokenizer.word_index = {e:i for e,i in tokenizer.word_index.items() if i <= num_words} # <= because tokenizer is 1 indexed
+#####
+word2index = tokenizer.word_index
+index2word = {v:k for k,v in word2index.items()}
+#tokenize captions
+y_tok = tokenizer.texts_to_sequences(y)
 
+print(len(frequent_vocabulary), len(word2index))
 
-tokenizer.word_index['<pad>'] = 0
-tokenizer.index_word[0] = '<pad>'
-
-# Create the tokenized vectors
-train_seqs = tokenizer.texts_to_sequences(captions[k])
+print('tokenized caption:', y_tok[0])
+print('untokenized caption:', tokenizer.sequences_to_texts([y_tok[0]])[0])
 
 # Pad each vector to the max_length of the captions
 # If you do not provide a max_length value, pad_sequences calculates it automatically
