@@ -13,17 +13,16 @@ def load_embeddings(emb_file, word_map):
     :return: embeddings in the same order as the words in the word map, dimension of embeddings
     """
     vocab = set(word_map.keys())
-    embeddings = torch.rand(len(vocab), 300)
-    model = gensim.models.Word2Vec.load('www_cbow_300/www_cbow_300')
+    embeddings = torch.zeros(len(vocab), 300)
+    model = gensim.models.Word2Vec.load(emb_file)
 
     for i, word in enumerate(word_map.keys()):
         if word not in model.vocabulary:
-            embeddings[i,:] = model.most_similar(word)
+            embeddings[i, :] = model.most_similar(word)
         else:
             embeddings[i, :] = model.wv(word)
 
     return embeddings
-
 
 
 def adjust_learning_rate(optimizer, shrink_factor):

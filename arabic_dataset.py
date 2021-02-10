@@ -173,9 +173,9 @@ for k,v in captions.items():
     for cpt in v:
         a = [w for w in cpt.split() if len(w)==1 and w!='و']
         if len(a)>0: print(cpt)
+
             
-            
-  def get_vocabulary(cpts):
+def get_vocabulary(cpts):
     """retruns a list of all unique words in captions"""
     captions_flattened = [cpt for image_captions in cpts.values() for cpt in image_captions]
     all_captions = ' '.join(captions_flattened)
