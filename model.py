@@ -107,7 +107,7 @@ class Decoder(nn.Module):
         decode_lengths = (caption_lengths - 1).tolist()
 
         # Create tensors to hold word predicion scores
-        predictions  = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(device)
+        predictions = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(device)
         predictions1 = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(device)
         
         # At each time-step, pass the language model's previous hidden state, the mean pooled bottom up features and
@@ -122,7 +122,7 @@ class Decoder(nn.Module):
             at1 = self.att1(image_features[:batch_size_t])  # (batch_size, 36, attention_dim), att encoder
             at2 = self.att2(h1[:batch_size_t])              # (batch_size, attention_dim) , att decoder
             at3 = self.att3(self.dropout(self.tanh(at1 + at2.unsqueeze(1)))).squeeze(2)  # (batch_size, 36)
-            alpha= self.att4(at3)  
+            alpha = self.att4(at3)
             attention_weighted_encoding = (image_features * alpha.unsqueeze(2)).sum(dim=1) 
             preds1 = self.word(self.dropout(h1))
 

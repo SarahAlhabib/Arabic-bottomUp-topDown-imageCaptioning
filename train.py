@@ -1,5 +1,6 @@
 """
 this code is adapted from https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning/blob/master/train.py
+and https://github.com/poojahira/image-captioning-bottom-up-top-down/blob/master/train.py
 """
 import torch
 import torch.optim
@@ -7,6 +8,7 @@ import os
 import time
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torch.nn.utils.rnn import pack_padded_sequence
 from model import Decoder
 from utils import load_embeddings, adjust_learning_rate, save_checkpoint, AverageMeter, clip_gradient, accuracy
 from nltk.translate.bleu_score import corpus_bleu
@@ -69,11 +71,13 @@ def main():
     # Move to GPU, if available
     decoder = decoder.to(device)
 
-    # Loss function
-    criterion = nn.CrossEntropyLoss().to(device)
+    # Loss functions
+    criterion_ce = nn.CrossEntropyLoss().to(device)
+    criterion_dis = nn.MultiLabelMarginLoss().to(device)
 
     # TODO: Custom dataloaders
     train_loader = DataLoader()
+    eval_loader = DataLoader()
 
     # Epochs
     for epoch in range(start_epoch, epochs):
@@ -87,7 +91,8 @@ def main():
         # One epoch's training
         train(train_loader=train_loader,
               decoder=decoder,
-              criterion=criterion,
+              criterion_ce=criterion_ce,
+              criterion_dis=criterion_dis,
               decoder_optimizer=decoder_optimizer,
               epoch=epoch)
 
@@ -101,7 +106,7 @@ def main():
         save_checkpoint(data_name, epoch, epochs_since_improvement, decoder, decoder_optimizer, recent_bleu4, is_best)
 
 
-def train(train_loader, decoder, criterion, decoder_optimizer, epoch):
+def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer, epoch):
     """
         Performs one epoch's training.
         :param train_loader: DataLoader for training data
@@ -131,18 +136,25 @@ def train(train_loader, decoder, criterion, decoder_optimizer, epoch):
         caplens = caplens.to(device)
 
         # Forward
-        predictions, predictions1, encoded_captions, decode_lengths, sort_ind = decoder(imgs, caps, caplens)
-        #scores, caps_sorted, decode_lengths, alphas, sort_ind = decoder(imgs, caps, caplens)
+        scores, scores_d, encoded_captions, decode_lengths, sort_ind = decoder(imgs, caps, caplens)
+
+        # Max-pooling across predicted words across time steps for discriminative supervision
+        scores_d = scores_d.max(1)[0]
+
         # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
-        ## targets = caps_sorted[:, 1:]
+        targets = encoded_captions[:, 1:]
+        targets_d = torch.zeros(scores_d.size(0), scores_d.size(1)).to(device)
+        targets_d.fill_(-1)
 
         # Remove timesteps that we didn't decode at, or are pads
-        ## pack_padded_sequence is an easy trick to do this
-        ## scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
-        ## targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+        # pack_padded_sequence is an easy trick to do this
+        scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
+        targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
 
         # Calculate loss
-        loss = criterion(scores, targets)
+        loss_d = criterion_dis(scores_d, targets_d.long())
+        loss_g = criterion_ce(scores, targets)
+        loss = loss_g + (10 * loss_d)
 
         # Backpropagation
         decoder_optimizer.zero_grad()
@@ -175,7 +187,7 @@ def train(train_loader, decoder, criterion, decoder_optimizer, epoch):
                                                                           top5=top5accs))
 
 
-def validate(val_loader, decoder, criterion):
+def validate(val_loader, decoder, criterion_ce, criterion_dis):
     """
     Performs one epoch's validation.
     :param val_loader: DataLoader for validation data.
@@ -205,11 +217,19 @@ def validate(val_loader, decoder, criterion):
             caplens = caplens.to(device)
 
             # Forward prop.
-            #scores, caps_sorted, decode_lengths, alphas, sort_ind = decoder(imgs, caps, caplens)
-            predictions, predictions1, encoded_captions, decode_lengths, sort_ind = decoder(imgs, caps, caplens)
+            scores, scores_d, encoded_captions, decode_lengths, sort_ind = decoder(imgs, caps, caplens)
+
+            # Max-pooling across predicted words across time steps for discriminative supervision
+            scores_d = scores_d.max(1)[0]
 
             # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
-            targets = caps_sorted[:, 1:]
+            targets = encoded_captions[:, 1:]
+            targets_d = torch.zeros(scores_d.size(0), scores_d.size(1)).to(device)
+            targets_d.fill_(-1)
+
+            for length in decode_lengths:
+                targets_d[:, :length - 1] = targets[:, :length - 1]
+
 
             # Remove timesteps that we didn't decode at, or are pads
             # pack_padded_sequence is an easy trick to do this
@@ -218,7 +238,9 @@ def validate(val_loader, decoder, criterion):
             targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
 
             # Calculate loss
-            loss = criterion(scores, targets)
+            loss_d = criterion_dis(scores_d, targets_d.long())
+            loss_g = criterion_ce(scores, targets)
+            loss = loss_g + (10 * loss_d)
 
             # Keep track of metrics
             losses.update(loss.item(), sum(decode_lengths))
