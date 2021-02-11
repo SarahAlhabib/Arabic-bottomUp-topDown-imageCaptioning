@@ -1,3 +1,6 @@
+"""
+this code is adapted from  https://github.com/poojahira/image-captioning-bottom-up-top-down/blob/master/models.py
+"""
 
 import torch
 from torch import nn
