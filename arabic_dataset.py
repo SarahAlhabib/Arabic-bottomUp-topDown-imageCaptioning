@@ -51,6 +51,7 @@ def load_data(filename):
   file.close()
   return text
 
+
 def get_captions(file_text):
     """given file content, returns images names and their captions as dictionary"""
     cpts = {}
@@ -68,6 +69,7 @@ def get_captions(file_text):
         else:
             cpts[img_name].append(cpt)
     return cpts
+
 
 def preprocess_captions(cpts):
     """ clean captions to reduce vocabulary size we need to work with:
@@ -99,6 +101,7 @@ def preprocess_captions(cpts):
         processed_captions = [process_arab.preprocess_arabic_text(c) for c in cpt]
         cpts[img] = processed_captions
 
+
 def add_start_end_to_captions(cpts):
     """precede each caption with <START> and end each caption with <END>"""
     start, end = '<START>', '<END>'
@@ -106,41 +109,6 @@ def add_start_end_to_captions(cpts):
     for k, v in cpts.items():
         image_captions = [start + ' ' + cpt + ' ' + end for cpt in v]
         cpts[k] = image_captions
-
-    
-    
-filename = "/Users/sarahalhabib/Documents/مستوى ثامن/Flickr8k.arabic.full.txt"
-
-
-captions_file_text = load_data(filename)
-
-captions = get_captions(captions_file_text)
-print('Captions #:', len(captions))
-print('Caption example:', list(captions.values())[0])
-
-
-k = '299178969_5ca1de8e40' #2660480624_45f88b3022
-print('before >>', captions[k])
-preprocess_captions(captions)
-print('captions preprocessed :)')
-print('after >>', captions[k])
-
-
-# يوضح أن (preprocess_captions(cpts)) تشتغل بشكل صحيح 
-re.search('\w+', ' 456')
-i = 0
-for k,v in captions.items():
-    print(v)
-    i += 1
-    if i == 10: break
-
-        
-add_start_end_to_captions(captions)
-
-for k,v in captions.items():
-    for cpt in v:
-        a = [w for w in cpt.split() if len(w)==1 and w!='و']
-        if len(a)>0: print(cpt)
 
             
 def get_vocabulary(cpts):
@@ -150,8 +118,6 @@ def get_vocabulary(cpts):
     v = set(all_captions.split())
     return sorted(list(v))
 
-vocabulary = get_vocabulary(captions)
-print('Vocabulary size (number of unique words):', len(vocabulary))
 
 def get_frequent_vocabulary(cpts, frequency=5):
     """retruns a list of all unique words that appeared more than `frequency` times"""
@@ -162,13 +128,45 @@ def get_frequent_vocabulary(cpts, frequency=5):
         if all_captions.count(v) >= frequency: frequent_vocabulary.append(v)
     return frequent_vocabulary
 
-frequent_vocabulary = get_frequent_vocabulary(captions, 3)
-print('Frequent vocabulary size (number of unique words):', len(frequent_vocabulary))
-
 
 def calc_max_length(tensor):
     return max(len(t) for t in tensor)
 
+
+filename = "/Users/sarahalhabib/Documents/مستوى ثامن/Flickr8k.arabic.full.txt"
+
+captions_file_text = load_data(filename)
+
+captions = get_captions(captions_file_text)
+print('Captions #:', len(captions))
+print('Caption example:', list(captions.values())[0])
+
+k = '299178969_5ca1de8e40'  # 2660480624_45f88b3022
+print('before >>', captions[k])
+preprocess_captions(captions)
+print('captions preprocessed :)')
+print('after >>', captions[k])
+
+# يوضح أن (preprocess_captions(cpts)) تشتغل بشكل صحيح
+re.search('\w+', ' 456')
+i = 0
+for k, v in captions.items():
+    print(v)
+    i += 1
+    if i == 10: break
+
+add_start_end_to_captions(captions)
+
+for k, v in captions.items():
+    for cpt in v:
+        a = [w for w in cpt.split() if len(w) == 1 and w != 'و']
+        if len(a) > 0: print(cpt)
+
+vocabulary = get_vocabulary(captions)
+print('Vocabulary size (number of unique words):', len(vocabulary))
+
+frequent_vocabulary = get_frequent_vocabulary(captions, 3)
+print('Frequent vocabulary size (number of unique words):', len(frequent_vocabulary))
 
 y = []
 for k,image_captions in captions.items():
