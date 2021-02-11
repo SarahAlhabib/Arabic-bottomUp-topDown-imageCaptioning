@@ -162,13 +162,12 @@ def get_frequent_vocabulary(cpts, frequency=5):
         if all_captions.count(v) >= frequency: frequent_vocabulary.append(v)
     return frequent_vocabulary
 
-frequent_vocabulary = get_frequent_vocabulary(captions, 3)
-print('Frequent vocabulary size (number of unique words):', len(frequent_vocabulary))
-
-
 def calc_max_length(tensor):
     return max(len(t) for t in tensor)
 
+
+frequent_vocabulary = get_frequent_vocabulary(captions, 3)
+print('Frequent vocabulary size (number of unique words):', len(frequent_vocabulary))
 
 y = []
 for k,image_captions in captions.items():
