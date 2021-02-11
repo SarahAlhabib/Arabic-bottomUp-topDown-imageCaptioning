@@ -5,6 +5,8 @@ import string
 from string import punctuation
 import re
 import keras
+import pandas as pd
+import numpy as np
 
 
 class Arabic_preprocessing:
@@ -72,23 +74,6 @@ def get_captions(file_text):
 
 
 def preprocess_captions(cpts):
-    """ clean captions to reduce vocabulary size we need to work with:
-        - lowercase
-        - remove punctuations
-        - remove one-character words
-        - remove words with numbers
-    """
-    for img, cpt in cpts.items():
-        cpts_ = []
-        for c in cpt:
-            c = c.lower() #lower case all caption
-            c = ''.join([char for char in c if char not in punctuation]) #remove punctuations
-            c = ' '.join([w for w in c.split() if len(w)>1 and w.isalpha()]) #remove one-character & numeric words
-            cpts_.append(c)
-        cpts[img] = cpts_
-
-
-def preprocess_captions(cpts):
     """ clean captions to get rid of useless textual info & reduce vocabulary size. Preprocessing includes:
         - remove punctuations & diacritics
         - normalize (or standarize) Hamza & Ha2
@@ -131,6 +116,43 @@ def get_frequent_vocabulary(cpts, frequency=5):
 
 def calc_max_length(tensor):
     return max(len(t) for t in tensor)
+
+
+def create_input_files(file_name):
+    # load and preprocess
+    captions_file_text = load_data(file_name)
+    captions_dic = get_captions(captions_file_text)
+    preprocess_captions(captions_dic)
+    add_start_end_to_captions(captions_dic)
+    df = pd.DataFrame(list(captions_dic.items()), columns=['images', 'captions'])
+
+    # split
+    train, validate, test = np.split(df.sample(frac=1, random_state=42),
+                                     [int(.7 * len(df)), int(.8 * len(df))])
+
+    # save
+    train.to_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_train.csv")
+    validate.to_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_validate.csv")
+    test.to_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_test.csv")
+
+
+def get_captions_dic(split):
+    if split == "TRAIN":
+        df = pd.read_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_train.csv", index_col=[0])
+        captions_numpy = df.to_numpy()
+        captions_dic = dict(captions_numpy)
+
+    elif split == "VALIDATE":
+        df = pd.read_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_validate.csv", index_col=[0])
+        captions_numpy = df.to_numpy()
+        captions_dic = dict(captions_numpy)
+
+    else:
+        df = pd.read_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_test.csv", index_col=[0])
+        captions_numpy = df.to_numpy()
+        captions_dic = dict(captions_numpy)
+
+    return captions_dic
 
 
 filename = "/Users/sarahalhabib/Documents/مستوى ثامن/Flickr8k.arabic.full.txt"
@@ -206,9 +228,8 @@ print(y_tok)
 print(cap_vector)
 print(max_length)
 
+create_input_files(filename)
+train_dic = get_captions_dic("TRAIN")
 
-
-
-
-        
+print(train_dic)
 
