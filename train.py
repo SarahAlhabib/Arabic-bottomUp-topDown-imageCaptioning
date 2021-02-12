@@ -49,17 +49,16 @@ def main():
 
 
     create_input_files(caption_file)
+
     # Read word map
     with open('tokenizer.pickle', 'rb') as handle:
         tokenizer = pickle.load(handle)
 
     word2index = tokenizer.word_index
-    index2word = {v: k for k, v in word2index.items()}
+    word_map = {v: k for k, v in word2index.items()}
 
-    word_map = index2word
-    vocab_size = len(index2word.keys())
+    vocab_size = len(word_map.keys())
 
-    # read vocab
 
     # Initialize / load checkpoint
     if checkpoint is None:
