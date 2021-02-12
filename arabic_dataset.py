@@ -7,6 +7,8 @@ import re
 import keras
 import pandas as pd
 import numpy as np
+import pickle
+
 
 
 class Arabic_preprocessing:
@@ -42,7 +44,6 @@ class Arabic_preprocessing:
         text = self.remove_punctuations(text)
         text = self.normalize_arabic(text)
         text = self.remove_english_characters(text)
-        text = self.remove_repeating_char(text)
         text = ' '.join([w for w in text.split() if len(w)>1 and w.isalpha()]) #remove one-character & numeric words
         return text
 
@@ -104,7 +105,7 @@ def get_vocabulary(cpts):
     return sorted(list(v))
 
 
-def get_frequent_vocabulary(cpts, frequency=5):
+def get_frequent_vocabulary(cpts, vocabulary, frequency=5):
     """retruns a list of all unique words that appeared more than `frequency` times"""
     captions_flattened = [cpt for image_captions in cpts.values() for cpt in image_captions]
     all_captions = ' '.join(captions_flattened)
@@ -129,32 +130,87 @@ def create_input_files(file_name):
     # split
     train, validate, test = np.split(df.sample(frac=1, random_state=42),
                                      [int(.7 * len(df)), int(.8 * len(df))])
-
     # save
-    train.to_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_train.csv")
-    validate.to_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_validate.csv")
-    test.to_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_test.csv")
+    train.to_csv("flickr_train.csv")
+    validate.to_csv("flickr_validate.csv")
+    test.to_csv("flickr_test.csv")
+
+    tokenizer = create_tokenizer(captions_dic)
+    # save tokenizer object
+    with open('tokenizer.pickle', 'wb') as handle:
+        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def get_captions_dic(split):
     if split == "TRAIN":
-        df = pd.read_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_train.csv", index_col=[0])
+        df = pd.read_csv("flickr_train.csv", index_col=[0])
         captions_numpy = df.to_numpy()
         captions_dic = dict(captions_numpy)
 
-    elif split == "VALIDATE":
-        df = pd.read_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_validate.csv", index_col=[0])
+    elif split == "VAL":
+        df = pd.read_csv("flickr_validate.csv", index_col=[0])
         captions_numpy = df.to_numpy()
         captions_dic = dict(captions_numpy)
 
     else:
-        df = pd.read_csv("/Users/sarahalhabib/Documents/مستوى ثامن/flickr_test.csv", index_col=[0])
+        df = pd.read_csv("flickr_test.csv", index_col=[0])
         captions_numpy = df.to_numpy()
         captions_dic = dict(captions_numpy)
 
     return captions_dic
 
 
+def create_tokenizer(captions_dic):
+    vocabulary = get_vocabulary(captions_dic)
+    frequent_vocabulary = get_frequent_vocabulary(captions_dic, vocabulary, 3)
+    num_words = len(frequent_vocabulary) + 1
+    tokenizer = keras.preprocessing.text.Tokenizer(num_words=num_words, oov_token='<UNK>', lower=False,
+                                                   filters='')  # num_words=num_words,
+    captions_list = []
+    for k, image_captions in captions_dic.items():
+        for image_caption in image_captions:
+            captions_list.append(image_caption)
+
+    tokenizer.fit_on_texts(captions_list)
+    tokenizer.word_index['<PAD>'] = 0
+    tokenizer.word_index = {e: i for e, i in tokenizer.word_index.items() if
+                            i <= num_words}  # <= because tokenizer is 1 indexed
+
+    return tokenizer
+
+
+def get_tokenizer(captions_dic):
+    # load tokenizer object
+    with open('tokenizer.pickle', 'rb') as handle:
+        tokenizer = pickle.load(handle)
+    captions_list = []
+    for k, image_captions in captions_dic.items():
+        image_captions = image_captions.strip('][').split(', ')
+        for image_caption in image_captions:
+            captions_list.append(image_caption)
+
+    tokenized = tokenizer.texts_to_sequences(captions_list)
+    max_length = calc_max_length(tokenized)
+
+    return tokenizer, max_length
+
+
+def tokenize_captions(captions_list, tokenizer, max_len):
+    captions_list = captions_list.strip('][').split(', ')
+    numeralize = tokenizer.texts_to_sequences(captions_list)
+    print(numeralize)
+    captions_lengths = [len(i) for i in numeralize]
+    pad_sequences = keras.preprocessing.sequence.pad_sequences(numeralize, maxlen=max_len, padding='post')
+    print(pad_sequences)
+    return pad_sequences, captions_lengths
+
+
+
+
+
+
+
+'''
 filename = "/Users/sarahalhabib/Documents/مستوى ثامن/Flickr8k.arabic.full.txt"
 
 captions_file_text = load_data(filename)
@@ -191,7 +247,7 @@ frequent_vocabulary = get_frequent_vocabulary(captions, 3)
 print('Frequent vocabulary size (number of unique words):', len(frequent_vocabulary))
 
 y = []
-for k,image_captions in captions.items():
+for k, image_captions in captions.items():
     for image_caption in image_captions:
         y.append(image_caption)
 print(len(y))#24273
@@ -232,4 +288,5 @@ create_input_files(filename)
 train_dic = get_captions_dic("TRAIN")
 
 print(train_dic)
+'''
 

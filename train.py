@@ -12,6 +12,9 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from model import Decoder
 from utils import load_embeddings, adjust_learning_rate, save_checkpoint, AverageMeter, clip_gradient, accuracy
 from nltk.translate.bleu_score import corpus_bleu
+from arabic_dataset import create_input_files
+from flickrDataset import Flickr8kDataset
+import pickle
 
 caption_file = ''
 images_features_file = ''
@@ -44,9 +47,18 @@ def main():
 
     global best_bleu4, epochs_since_improvement, checkpoint, start_epoch, data_name, word_map
 
-    # TODO: Read word map
-    vocab_size=0
-    word_map=...
+
+    create_input_files(caption_file)
+    # Read word map
+    with open('tokenizer.pickle', 'rb') as handle:
+        tokenizer = pickle.load(handle)
+
+    word2index = tokenizer.word_index
+    index2word = {v: k for k, v in word2index.items()}
+
+    word_map = index2word
+    vocab_size = len(index2word.keys())
+
     # read vocab
 
     # Initialize / load checkpoint
@@ -75,9 +87,13 @@ def main():
     criterion_ce = nn.CrossEntropyLoss().to(device)
     criterion_dis = nn.MultiLabelMarginLoss().to(device)
 
-    # TODO: Custom dataloaders
-    train_loader = DataLoader()
-    eval_loader = DataLoader()
+    # Custom dataloaders
+    # split in {"TRAIN", "VAL", "TEST"}
+    train_loader = DataLoader(Flickr8kDataset(features_path=images_features_file, split='TRAIN'),
+                              batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
+
+    eval_loader = DataLoader(Flickr8kDataset(features_path=images_features_file, split='VAL'),
+                              batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Epochs
     for epoch in range(start_epoch, epochs):
