@@ -90,7 +90,7 @@ class Decoder(nn.Module):
         batch_size = image_features.size(0)
         vocab_size = self.vocab_size
 
-         # Flatten image
+         # Flatten image #mean(0) ?
         image_features_mean = image_features.mean(1).to(device)  # (batch_size, num_pixels, encoder_dim)
 
         # Sort input data
@@ -135,5 +135,5 @@ class Decoder(nn.Module):
             predictions [:batch_size_t, t, :] = preds
             predictions1[:batch_size_t, t, :] = preds1
 
-            return predictions, predictions1, encoded_captions, decode_lengths, sort_ind
+        return predictions, predictions1, encoded_captions, decode_lengths, sort_ind
 
