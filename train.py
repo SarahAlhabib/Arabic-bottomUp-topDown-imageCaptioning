@@ -54,8 +54,7 @@ def main():
     with open('tokenizer.pickle', 'rb') as handle:
         tokenizer = pickle.load(handle)
 
-    word2index = tokenizer.word_index
-    word_map = {v: k for k, v in word2index.items()}
+    word_map = tokenizer.word_index
 
     vocab_size = len(word_map.keys())
 
