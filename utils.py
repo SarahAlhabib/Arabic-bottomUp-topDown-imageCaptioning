@@ -3,6 +3,16 @@ this code is from https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captio
 """
 import torch
 import gensim
+import numpy as np
+
+
+def init_embedding(embeddings):
+    """
+    Fills embedding tensor with values from the uniform distribution.
+    :param embeddings: embedding tensor
+    """
+    bias = np.sqrt(3.0 / embeddings.size(1))
+    torch.nn.init.uniform_(embeddings, -bias, bias)
 
 
 def load_embeddings(emb_file, word_map):
@@ -13,14 +23,21 @@ def load_embeddings(emb_file, word_map):
     :return: embeddings in the same order as the words in the word map, dimension of embeddings
     """
     vocab = set(word_map.keys())
-    embeddings = torch.zeros(len(vocab), 300)
+    embeddings = torch.FloatTensor(len(vocab), 300)
+    init_embedding(embeddings)
     model = gensim.models.Word2Vec.load(emb_file)
 
-    for i, word in enumerate(word_map.keys()):
-        if word not in model.vocabulary:
-            embeddings[i, :] = model.most_similar(word)
-        else:
-            embeddings[i, :] = model.wv(word)
+    counter = 0
+
+    for word in word2index.keys():
+        try:
+            embeddings[word2index[word]] = torch.tensor(model.wv[word])
+        except:
+            # print(word)
+            counter += 1
+
+    print("embedding not found for ", counter, " out of ", len(word_map))
+    print("embedding size: ", embeddings.size())
 
     return embeddings
 
