@@ -4,7 +4,6 @@ and https://github.com/poojahira/image-captioning-bottom-up-top-down/blob/master
 """
 import torch
 import torch.optim
-import os
 import time
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -47,7 +46,6 @@ def main():
 
     global best_bleu4, epochs_since_improvement, checkpoint, start_epoch, data_name, word_map
 
-
     create_input_files(caption_file)
 
     # Read word map
@@ -58,12 +56,16 @@ def main():
 
     vocab_size = len(word_map.keys())
 
-
     # Initialize / load checkpoint
     if checkpoint is None:
-        decoder = Decoder(attention_dim, emb_dim, decoder_dim,vocab_size=vocab_size, features_dim=2048, dropout=dropout)
+        decoder = Decoder(attention_dim,
+                          emb_dim,
+                          decoder_dim,
+                          vocab_size=vocab_size,
+                          features_dim=2048,
+                          dropout=dropout)
         # embeddings
-        embeddings = load_embeddings(embeddings_file,word_map)
+        embeddings = load_embeddings(embeddings_file, word_map)
         decoder.load_pretrained_embeddings(embeddings)
         decoder.fine_tune_embeddings(False)
 
@@ -83,6 +85,7 @@ def main():
 
     # Loss functions
     criterion_ce = nn.CrossEntropyLoss().to(device)
+    # TODO: understand criterion_dis
     criterion_dis = nn.MultiLabelMarginLoss().to(device)
 
     # Custom dataloaders
@@ -110,6 +113,7 @@ def main():
               decoder_optimizer=decoder_optimizer,
               epoch=epoch)
 
+        # TODO: call validate
         # One epoch's validation
         recent_bleu4 = 0
 
@@ -124,10 +128,9 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
     """
         Performs one epoch's training.
         :param train_loader: DataLoader for training data
-        :param encoder: encoder model
         :param decoder: decoder model
-        :param criterion: loss layer
-        :param encoder_optimizer: optimizer to update encoder's weights (if fine-tuning)
+        :param criterion_ce: attention layer loss
+        :param criterion_dis: language layer loss
         :param decoder_optimizer: optimizer to update decoder's weights
         :param epoch: epoch number
         """
@@ -141,8 +144,8 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
 
     start = time.time()
 
-    for i, (imgs, caps, caplens) in enumerate(train_loader()):
-        data_time.update(time.time()-start)
+    for i, (imgs, caps, caplens) in enumerate(train_loader):
+        data_time.update(time.time() - start)
 
         # Move to GPU, if available
         imgs = imgs.to(device)
@@ -150,15 +153,18 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
         caplens = caplens.to(device)
 
         # Forward
-        scores, scores_d, encoded_captions, decode_lengths, sort_ind = decoder(imgs, caps, caplens)
+        scores, scores_d, sorted_captions, decode_lengths, sort_ind = decoder(imgs, caps, caplens)
 
         # Max-pooling across predicted words across time steps for discriminative supervision
         scores_d = scores_d.max(1)[0]
 
         # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
-        targets = encoded_captions[:, 1:]
+        targets = sorted_captions[:, 1:]
         targets_d = torch.zeros(scores_d.size(0), scores_d.size(1)).to(device)
         targets_d.fill_(-1)
+
+        for length in decode_lengths:
+            targets_d[:, :length - 1] = targets[:, :length - 1]
 
         # Remove timesteps that we didn't decode at, or are pads
         # pack_padded_sequence is an easy trick to do this
