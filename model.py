@@ -40,7 +40,8 @@ class Decoder(nn.Module):
 
         self.language_model = nn.LSTMCell(features_dim + decoder_dim, decoder_dim, bias=True)  # language model LSTMCell
         self.word = nn.Linear(decoder_dim, vocab_size)
-        self.act = nn.Softmax(dim=1)
+        self.act = nn.Softmax(dim=1) 
+    
         self.init_weights()  # initialize some layers with the uniform distribution
 
 
@@ -52,8 +53,7 @@ class Decoder(nn.Module):
         self.embedding.weight.data.uniform_(-0.1, 0.1)
         self.word.bias.data.fill_(0)
         self.word.weight.data.uniform_(-0.1, 0.1)
-
-
+        
     def load_pretrained_embeddings(self, embeddings):
         """
         Loads embedding layer with pre-trained embeddings.
@@ -132,7 +132,7 @@ class Decoder(nn.Module):
             h2,c2 = self.language_model(torch.cat([attention_weighted_encoding[:batch_size_t],h1[:batch_size_t]], dim=1),(h2[:batch_size_t], c2[:batch_size_t]))
             preds = self.act(self.dropout(h2))  # (batch_size_t, vocab_size)
 
-            predictions[:batch_size_t, t, :]  = preds
+            predictions [:batch_size_t, t, :] = preds
             predictions1[:batch_size_t, t, :] = preds1
 
         return predictions, predictions1, encoded_captions, decode_lengths, sort_ind
