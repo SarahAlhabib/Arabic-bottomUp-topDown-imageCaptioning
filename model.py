@@ -51,9 +51,9 @@ class Decoder(nn.Module):
         Initializes some parameters with values from the uniform distribution, for easier convergence.
         """
         self.embedding.weight.data.uniform_(-0.1, 0.1)
-        self.act.bias.data.fill_(0)
-        self.act.weight.data.uniform_(-0.1, 0.1)
-
+        self.word.bias.data.fill_(0)
+        self.word.weight.data.uniform_(-0.1, 0.1)
+        
     def load_pretrained_embeddings(self, embeddings):
         """
         Loads embedding layer with pre-trained embeddings.
