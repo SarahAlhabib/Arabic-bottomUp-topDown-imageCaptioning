@@ -185,6 +185,7 @@ def get_tokenizer(captions_dic):
         tokenizer = pickle.load(handle)
     captions_list = []
     for k, image_captions in captions_dic.items():
+        image_captions = image_captions.replace("'", "")
         image_captions = image_captions.strip('][').split(', ')
         for image_caption in image_captions:
             captions_list.append(image_caption)
@@ -196,6 +197,7 @@ def get_tokenizer(captions_dic):
 
 
 def tokenize_captions(captions_list, tokenizer, max_len):
+    captions_list = captions_list.replace("'", "")
     captions_list = captions_list.strip('][').split(', ')
     numeralize = tokenizer.texts_to_sequences(captions_list)
     #print(numeralize)
