@@ -198,10 +198,10 @@ def get_tokenizer(captions_dic):
 def tokenize_captions(captions_list, tokenizer, max_len):
     captions_list = captions_list.strip('][').split(', ')
     numeralize = tokenizer.texts_to_sequences(captions_list)
-    print(numeralize)
+    #print(numeralize)
     captions_lengths = [len(i) for i in numeralize]
     pad_sequences = keras.preprocessing.sequence.pad_sequences(numeralize, maxlen=max_len, padding='post')
-    print(pad_sequences)
+    #print(pad_sequences)
     return pad_sequences, captions_lengths
 
 
