@@ -348,7 +348,7 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
                 ref.append(index2word[word])
             refs.append(ref)
 
-        print("img_id:", val_numpy[indexes[rand]])
+        print("img_id:", val_numpy[indexes[rand], 0])
         print("reference:", refs[0], "\n", refs[1], "\n", refs[2])
         print("hypotheses:", hyp)
 
