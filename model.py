@@ -12,10 +12,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Decoder(nn.Module):
-    
 
-    def __init__(self, attention_dim, embed_dim, decoder_dim, vocab_size, features_dim=2048, dropout=0.5): ## 
-       
+
+    def __init__(self, attention_dim, embed_dim, decoder_dim, vocab_size, features_dim=2048, dropout=0.5): ##
+
         super(Decoder, self).__init__()
 
         self.features_dim = features_dim
@@ -25,23 +25,23 @@ class Decoder(nn.Module):
         self.vocab_size = vocab_size
         self.dropout = dropout
 
-      
-      
+
+
         self.embedding = nn.Embedding(vocab_size, embed_dim)  # embedding layer
-        
+
         self.top_down_attention = nn.LSTMCell(embed_dim + features_dim + decoder_dim , decoder_dim, bias=True) # top down attention LSTMCell
-      
-        self.att1 = nn.Linear(features_dim, attention_dim) #attention layer 
+
+        self.att1 = nn.Linear(features_dim, attention_dim) #attention layer
         self.att2 = nn.Linear(decoder_dim, attention_dim)
-        self.att3 = nn.Linear(attention_dim, 1)   
+        self.att3 = nn.Linear(attention_dim, 1)
         self.tanh = nn.Tanh()
         self.dropout = nn.Dropout(p=dropout)
         self.att4 = nn.Softmax(dim=1)
 
         self.language_model = nn.LSTMCell(features_dim + decoder_dim, decoder_dim, bias=True)  # language model LSTMCell
         self.word = nn.Linear(decoder_dim, vocab_size)
-        self.act = nn.Softmax(dim=1) 
-    
+        self.act = nn.Softmax(dim=1)
+
         self.init_weights()  # initialize some layers with the uniform distribution
 
 
@@ -53,7 +53,7 @@ class Decoder(nn.Module):
         self.embedding.weight.data.uniform_(-0.1, 0.1)
         self.word.bias.data.fill_(0)
         self.word.weight.data.uniform_(-0.1, 0.1)
-        
+
     def load_pretrained_embeddings(self, embeddings):
         """
         Loads embedding layer with pre-trained embeddings.
@@ -105,18 +105,18 @@ class Decoder(nn.Module):
         # Initialize LSTM state
         h1, c1 = self.init_hidden_state(batch_size)  # (batch_size, decoder_dim) 
         h2, c2 = self.init_hidden_state(batch_size)  # (batch_size, decoder_dim)
-        
+
         # We won't decode at the <end> position, since we've finished generating as soon as we generate <end>
         decode_lengths = (caption_lengths - 1).tolist()
 
         # Create tensors to hold word predicion scores
         predictions = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(device)
         predictions1 = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(device)
-        
+
         # At each time-step, pass the language model's previous hidden state, the mean pooled bottom up features and
         # word embeddings to the top down attention model. Then pass the hidden state of the top down model and the bottom up 
         # features to the attention block. The attention weighed bottom up features and hidden state of the top down attention model
-        # are then passed to the language model 
+        # are then passed to the language model
         for t in range(max(decode_lengths)):
             batch_size_t = sum([l > t for l in decode_lengths])
 
@@ -126,7 +126,7 @@ class Decoder(nn.Module):
             at2 = self.att2(h1[:batch_size_t])              # (batch_size, attention_dim) , att decoder
             at3 = self.att3(self.dropout(self.tanh(at1 + at2.unsqueeze(1)))).squeeze(2)  # (batch_size, 36)
             alpha = self.att4(at3)
-            attention_weighted_encoding = (image_features * alpha.unsqueeze(2)).sum(dim=1) 
+            attention_weighted_encoding = (image_features[:batch_size_t] * alpha.unsqueeze(2)).sum(dim=1)
             preds1 = self.word(self.dropout(h1))
 
             h2,c2 = self.language_model(torch.cat([attention_weighted_encoding[:batch_size_t],h1[:batch_size_t]], dim=1),(h2[:batch_size_t], c2[:batch_size_t]))
