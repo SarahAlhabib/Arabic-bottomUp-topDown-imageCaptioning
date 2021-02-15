@@ -90,7 +90,7 @@ class Decoder(nn.Module):
         batch_size = image_features.size(0)
         vocab_size = self.vocab_size
 
-         # Flatten image #mean(0) ?
+         # Flatten image
         image_features_mean = image_features.mean(1).to(device)  # (batch_size, num_pixels, encoder_dim)
 
         # Sort input data
@@ -118,21 +118,22 @@ class Decoder(nn.Module):
         # features to the attention block. The attention weighed bottom up features and hidden state of the top down attention model
         # are then passed to the language model 
         for t in range(max(decode_lengths)):
+
             batch_size_t = sum([l > t for l in decode_lengths])
 
-            h1,c1 = self.top_down_attention(torch.cat([h2[:batch_size_t],image_features_mean[:batch_size_t],embeddings[:batch_size_t, t, :]], dim=1),(h1[:batch_size_t], c1[:batch_size_t]))
+            h1, c1 = self.top_down_attention(torch.cat([h2[:batch_size_t], image_features_mean[:batch_size_t], embeddings[:batch_size_t, t, :]], dim=1),(h1[:batch_size_t], c1[:batch_size_t]))
 
             at1 = self.att1(image_features[:batch_size_t])  # (batch_size, 36, attention_dim), att encoder
             at2 = self.att2(h1[:batch_size_t])              # (batch_size, attention_dim) , att decoder
             at3 = self.att3(self.dropout(self.tanh(at1 + at2.unsqueeze(1)))).squeeze(2)  # (batch_size, 36)
             alpha = self.att4(at3)
-            attention_weighted_encoding = (image_features * alpha.unsqueeze(2)).sum(dim=1) 
+            attention_weighted_encoding = (image_features[:batch_size_t] * alpha.unsqueeze(2)).sum(dim=1)
             preds1 = self.word(self.dropout(h1))
 
-            h2,c2 = self.language_model(torch.cat([attention_weighted_encoding[:batch_size_t],h1[:batch_size_t]], dim=1),(h2[:batch_size_t], c2[:batch_size_t]))
-            preds = self.act(self.dropout(h2))  # (batch_size_t, vocab_size)
+            h2, c2 = self.language_model(torch.cat([attention_weighted_encoding[:batch_size_t],h1[:batch_size_t]], dim=1),(h2[:batch_size_t], c2[:batch_size_t]))
+            preds = self.act(self.word(self.dropout(h2))) # (batch_size_t, vocab_size)
 
-            predictions [:batch_size_t, t, :] = preds
+            predictions[:batch_size_t, t, :] = preds
             predictions1[:batch_size_t, t, :] = preds1
 
         return predictions, predictions1, encoded_captions, decode_lengths, sort_ind
