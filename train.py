@@ -14,10 +14,13 @@ from nltk.translate.bleu_score import corpus_bleu
 from arabic_dataset import create_input_files
 from flickrDataset import Flickr8kDataset
 import pickle
+from random import randint
+import pandas as pd
 
-caption_file = ''
-images_features_file = ''
-embeddings_file = ''
+caption_file = '/Users/sarahalhabib/Documents/مستوى ثامن/‏Flickr8k.arabic.full.tsv'
+images_features_file = '/Users/sarahalhabib/Documents/مستوى ثامن/third/flickr8k_features.tsv'
+embeddings_file = '/Users/sarahalhabib/Documents/مستوى ثامن/full_grams_cbow_300_twitter/full_grams_cbow_300_twitter.mdl'
+data_name = 'Arabic_flickr8k_3_cap_per_img'
 
 # Model parameters
 emb_dim = 300  # dimension of word embeddings
@@ -36,7 +39,7 @@ decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 best_bleu4 = 0.  # BLEU-4 score right now
 print_freq = 100  # print training/validation stats every __ batches
-checkpoint = None  # path to checkpoint, None if none
+checkpoint = "checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar"  # path to checkpoint, None if none
 
 
 def main():
@@ -46,14 +49,12 @@ def main():
 
     global best_bleu4, epochs_since_improvement, checkpoint, start_epoch, data_name, word_map
 
-    create_input_files(caption_file)
-
     # Read word map
     with open('tokenizer.pickle', 'rb') as handle:
         tokenizer = pickle.load(handle)
 
     word_map = tokenizer.word_index
-
+    index2word = {v:k for k,v in word_map.items()}
     vocab_size = len(word_map.keys())
 
     # Initialize / load checkpoint
@@ -91,10 +92,10 @@ def main():
     # Custom dataloaders
     # split in {"TRAIN", "VAL", "TEST"}
     train_loader = DataLoader(Flickr8kDataset(features_path=images_features_file, split='TRAIN'),
-                              batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
+                            batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
-    eval_loader = DataLoader(Flickr8kDataset(features_path=images_features_file, split='VAL'),
-                              batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
+    val_loader = DataLoader(Flickr8kDataset(features_path=images_features_file, split='VAL'),
+                            batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Epochs
     for epoch in range(start_epoch, epochs):
@@ -115,10 +116,20 @@ def main():
 
         # TODO: call validate
         # One epoch's validation
-        recent_bleu4 = 0
+        recent_bleu4 = validate(val_loader=val_loader,
+                                decoder=decoder,
+                                criterion_ce=criterion_ce,
+                                criterion_dis=criterion_dis,
+                                index2word=index2word)
 
         # Check if there was an improvement
-        is_best = False
+        is_best = recent_bleu4 > best_bleu4
+        best_bleu4 = max(recent_bleu4, best_bleu4)
+        if not is_best:
+            epochs_since_improvement += 1
+            print("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
+        else:
+            epochs_since_improvement = 0
 
         # Save checkpoint
         save_checkpoint(data_name, epoch, epochs_since_improvement, decoder, decoder_optimizer, recent_bleu4, is_best)
@@ -168,12 +179,16 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
 
         # Remove timesteps that we didn't decode at, or are pads
         # pack_padded_sequence is an easy trick to do this
-        scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
-        targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+        # TODO:
+        #scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
+        #targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+        scores = pack_padded_sequence(scores, decode_lengths, batch_first=True)
+        targets = pack_padded_sequence(targets, decode_lengths, batch_first=True)
 
         # Calculate loss
+        #TODO: .data
         loss_d = criterion_dis(scores_d, targets_d.long())
-        loss_g = criterion_ce(scores, targets)
+        loss_g = criterion_ce(scores.data, targets.data)
         loss = loss_g + (10 * loss_d)
 
         # Backpropagation
@@ -188,7 +203,7 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
         decoder_optimizer.step()
 
         # Keep track of metrics
-        top5 = accuracy(scores, targets, 5)
+        top5 = accuracy(scores.data, targets.data, 5)
         losses.update(loss.item(), sum(decode_lengths))
         top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
@@ -207,7 +222,7 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
                                                                           top5=top5accs))
 
 
-def validate(val_loader, decoder, criterion_ce, criterion_dis):
+def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
     """
     Performs one epoch's validation.
     :param val_loader: DataLoader for validation data.
@@ -225,11 +240,11 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis):
 
     references = list()  # references (true captions) for calculating BLEU-4 score
     hypotheses = list()  # hypotheses (predictions)
-
+    indexes = list()
     # explicitly disable gradient calculation to avoid CUDA memory error
     with torch.no_grad():
         # Batches
-        for i, (imgs, caps, caplens, allcaps) in enumerate(val_loader):
+        for i, (imgs, caps, caplens, allcaps, index) in enumerate(val_loader):
 
             # Move to device, if available
             imgs = imgs.to(device)
@@ -254,17 +269,17 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis):
             # Remove timesteps that we didn't decode at, or are pads
             # pack_padded_sequence is an easy trick to do this
             scores_copy = scores.clone()
-            scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
-            targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+            scores = pack_padded_sequence(scores, decode_lengths, batch_first=True)
+            targets = pack_padded_sequence(targets, decode_lengths, batch_first=True)
 
             # Calculate loss
             loss_d = criterion_dis(scores_d, targets_d.long())
-            loss_g = criterion_ce(scores, targets)
+            loss_g = criterion_ce(scores.data, targets.data)
             loss = loss_g + (10 * loss_d)
 
             # Keep track of metrics
             losses.update(loss.item(), sum(decode_lengths))
-            top5 = accuracy(scores, targets, 5)
+            top5 = accuracy(scores.data, targets.data, 5)
             top5accs.update(top5, sum(decode_lengths))
             batch_time.update(time.time() - start)
 
@@ -286,7 +301,7 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis):
             for j in range(allcaps.shape[0]):
                 img_caps = allcaps[j].tolist()
                 img_captions = list(
-                    map(lambda c: [w for w in c if w not in {word_map['<start>'], word_map['<pad>']}],
+                    map(lambda c: [w for w in c if w not in {word_map['<START>'], word_map['<PAD>']}],
                         img_caps))  # remove <start> and pads
                 references.append(img_captions)
 
@@ -301,6 +316,10 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis):
 
             assert len(references) == len(hypotheses)
 
+            # store images indexes
+            for ind in index[sort_ind]:
+                indexes.append(ind)
+
         # Calculate BLEU-4 scores
         bleu4 = corpus_bleu(references, hypotheses)
 
@@ -309,6 +328,29 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis):
                 loss=losses,
                 top5=top5accs,
                 bleu=bleu4))
+
+        rand = randint(0, 500)
+
+        ref_numeric = references[rand]
+        hyp_numeric = hypotheses[rand]
+        refs = list()
+        hyp = list()
+
+        df = pd.read_csv("flickr_validate.csv", index_col=[0])
+        val_numpy = df.to_numpy()
+
+        for word in hyp_numeric:
+            hyp.append(index2word[word])
+
+        for reference in ref_numeric:
+            ref = list()
+            for word in reference:
+                ref.append(index2word[word])
+            refs.append(ref)
+
+        print("img_id:", val_numpy[indexes[rand]])
+        print("reference:", refs[0], "\n", refs[1], "\n", refs[2])
+        print("hypotheses:", hyp)
 
     return bleu4
 
