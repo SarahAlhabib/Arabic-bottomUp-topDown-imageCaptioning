@@ -2,9 +2,4 @@ from utils import create_input_files
 
 if __name__ == '__main__':
     # Create input files (along with word map)
-    create_input_files(dataset='flick8k',
-                       karpathy_json_path='data/caption_datasets/dataset_flick8k.json',
-                       captions_per_image=3,
-                       min_word_freq=5,
-                       output_folder='final_dataset',
-                       max_len=50)
+    create_input_files("Flickr8k.arabic.full.tsv")
