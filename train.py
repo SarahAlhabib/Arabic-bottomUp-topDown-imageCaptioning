@@ -39,7 +39,7 @@ decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 best_bleu4 = 0.  # BLEU-4 score right now
 print_freq = 100  # print training/validation stats every __ batches
-checkpoint = "checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar"  # path to checkpoint, None if none
+checkpoint = None # path to checkpoint, None if none
 
 
 def main():

@@ -1,5 +1,6 @@
-from utils import create_input_files
+from arabic_dataset import create_input_files
+
 
 if __name__ == '__main__':
     # Create input files (along with word map)
-    create_input_files("Flickr8k.arabic.full.tsv")
+    create_input_files("/content/‏Flickr8k.arabic.full.tsv")
