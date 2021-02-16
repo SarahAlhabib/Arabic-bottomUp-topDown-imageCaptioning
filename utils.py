@@ -31,7 +31,8 @@ def load_embeddings(emb_file, word_map):
 
     for word in word_map.keys():
         try:
-            embeddings[word_map[word]] = torch.tensor(model.wv[word])
+            embed = model.wv[word]
+            embeddings[word_map[word]] = torch.tensor(embed)
         except:
             # print(word)
             counter += 1
