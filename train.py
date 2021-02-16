@@ -17,9 +17,9 @@ import pickle
 from random import randint
 import pandas as pd
 
-caption_file = '/Users/sarahalhabib/Documents/مستوى ثامن/‏Flickr8k.arabic.full.tsv'
-images_features_file = '/Users/sarahalhabib/Documents/مستوى ثامن/third/flickr8k_features.tsv'
-embeddings_file = '/Users/sarahalhabib/Documents/مستوى ثامن/full_grams_cbow_300_twitter/full_grams_cbow_300_twitter.mdl'
+caption_file = '/content/Flickr8k.arabic.full.tsv'
+images_features_file = '/content/flickr8k_features.tsv'
+embeddings_file = '/content/full_grams_cbow_300_twitter/full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
 
 # Model parameters
@@ -66,7 +66,7 @@ def main():
                           features_dim=2048,
                           dropout=dropout)
         # embeddings
-        embeddings = load_embeddings(embeddings_file, word_map)
+        #embeddings = load_embeddings(embeddings_file, word_map)
         #decoder.load_pretrained_embeddings(embeddings)
         decoder.fine_tune_embeddings(True)
 
