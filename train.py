@@ -67,8 +67,8 @@ def main():
                           dropout=dropout)
         # embeddings
         embeddings = load_embeddings(embeddings_file, word_map)
-        decoder.load_pretrained_embeddings(embeddings)
-        decoder.fine_tune_embeddings(False)
+        #decoder.load_pretrained_embeddings(embeddings)
+        decoder.fine_tune_embeddings(True)
 
         decoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, decoder.parameters()),
                                              lr=decoder_lr)
