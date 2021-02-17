@@ -27,8 +27,8 @@ from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers, FastRC
 
 D2_ROOT = os.path.dirname(os.path.dirname(detectron2.__file__)) # Root of detectron2
 DATA_ROOT = os.getenv('FLICKR8K_IMG_ROOT', 'Dataset/Flicker8k_Dataset')
-MIN_BOXES = 10
-MAX_BOXES = 100
+MIN_BOXES = 36
+MAX_BOXES = 36
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--split', default='train2014', help='train2014, val2014')
@@ -248,7 +248,7 @@ def build_model():
         cfg.INPUT.MAX_SIZE_TEST = 1000
         cfg.MODEL.RPN.NMS_THRESH = 0.7
         # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-        cfg.MODEL.WEIGHTS = "http://nlp.cs.unc.edu/models/faster_rcnn_from_caffe_attr_original.pkl"
+        cfg.MODEL.WEIGHTS = "http://nlp.cs.unc.edu/models/faster_rcnn_from_caffe.pkl"
     else:
         assert False, "no this weight"
     detector = DefaultPredictor(cfg)
