@@ -162,7 +162,7 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
 
     for i, (imgs, caps, caplens) in enumerate(train_loader):
         data_time.update(time.time() - start)
-        print(imgs.shape)
+
         # Move to GPU, if available
         imgs = imgs.to(device)
         caps = caps.to(device)
