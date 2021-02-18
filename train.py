@@ -18,7 +18,7 @@ from random import randint
 import pandas as pd
 
 caption_file = '/content/Flickr8k.arabic.full.tsv'
-images_features_file = '/content/flickr8k_features.tsv'
+images_features_file = '/content/flickr8k_bottomUP_features.tsv'
 embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
 
@@ -56,6 +56,11 @@ def main():
     word_map = tokenizer.word_index
     index2word = {v:k for k,v in word_map.items()}
     vocab_size = len(word_map.keys())
+
+    # Read features
+    features = pd.read_csv(images_features_file, sep='\t')
+    features = features.to_numpy()
+    print("done downloading")
 
     # Initialize / load checkpoint
     if checkpoint is None:
@@ -157,7 +162,7 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
 
     for i, (imgs, caps, caplens) in enumerate(train_loader):
         data_time.update(time.time() - start)
-
+        print(imgs.shape)
         # Move to GPU, if available
         imgs = imgs.to(device)
         caps = caps.to(device)

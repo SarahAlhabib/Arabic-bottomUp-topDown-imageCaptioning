@@ -7,7 +7,7 @@ import numpy as np
 import base64
 
 class Flickr8kDataset(Dataset):
-    def __init__(self, features_path="/Users/sarahalhabib/Documents/مستوى ثامن/third/flickr8k_features.tsv", split='TRAIN'):
+    def __init__(self, features, split='TRAIN'):
         """
         Initialize data set as a list of IDs corresponding to each item of data set
 
@@ -24,9 +24,7 @@ class Flickr8kDataset(Dataset):
         self.tokenizer, self.max_len = get_tokenizer(self.captions_dic)
 
         # load features
-        self.features = pd.read_csv(self.features_path, sep='\t')
-        self.features = self.features.to_numpy()
-        print("done downloading")
+        self.features = features
 
     def get_encoded_image(self, id_name):
         """
