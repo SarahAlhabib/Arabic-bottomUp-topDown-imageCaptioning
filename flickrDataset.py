@@ -20,11 +20,8 @@ class Flickr8kDataset(Dataset):
         assert self.split in {'TRAIN', 'VAL', 'TEST'}
 
         self.captions_dic = get_captions_dic(self.split)
-        self.features_path = features_path
-        self.tokenizer, self.max_len = get_tokenizer(self.captions_dic)
-
-        # load features
         self.features = features
+        self.tokenizer, self.max_len = get_tokenizer(self.captions_dic)
 
     def get_encoded_image(self, id_name):
         """
