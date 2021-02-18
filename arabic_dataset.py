@@ -21,13 +21,14 @@ class Arabic_preprocessing:
         self.all_punctuations = set(arabic_punctuations + english_punctuations)
 
     def normalize_arabic(self, text):
+        text = re.sub(r'\bال(\w\w+)', r'\1', text)  # remove al ta3reef
         text = re.sub("[إأآاٱ]", "ا", text)
         text = re.sub("ى", "ي", text)
         text = re.sub("ة", "ه", text)  # replace ta2 marboota by ha2
         text = re.sub("گ", "ك", text)
         text = strip_tatweel(text) #remove tatweel 
         text = strip_tashkeel(text) #remove tashkeel
-        text = re.sub(r'\bال(\w\w+)', r'\1', text)  # remove al ta3reef
+        
 
         return text
 
