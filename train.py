@@ -18,7 +18,7 @@ from random import randint
 import pandas as pd
 
 caption_file = '/content/Flickr8k.arabic.full.tsv'
-images_features_file = '/content/flickr8k_bottomUP_features.tsv'
+images_features_file = '/content/flickr8k_bottomUp_features.tsv'
 embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
 
@@ -96,10 +96,10 @@ def main():
 
     # Custom dataloaders
     # split in {"TRAIN", "VAL", "TEST"}
-    train_loader = DataLoader(Flickr8kDataset(features_path=images_features_file, split='TRAIN'),
+    train_loader = DataLoader(Flickr8kDataset(features=features, split='TRAIN'),
                             batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
-    val_loader = DataLoader(Flickr8kDataset(features_path=images_features_file, split='VAL'),
+    val_loader = DataLoader(Flickr8kDataset(features=features, split='VAL'),
                             batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Epochs
