@@ -11,11 +11,11 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from model import Decoder
 from utils import load_embeddings, adjust_learning_rate, save_checkpoint, AverageMeter, clip_gradient, accuracy
 from nltk.translate.bleu_score import corpus_bleu
-from arabic_dataset import create_input_files
 from flickrDataset import Flickr8kDataset
 import pickle
 from random import randint
 import pandas as pd
+import numpy as np
 
 caption_file = '/content/Flickr8k.arabic.full.tsv'
 images_features_file = '/content/flickr8k_bottomUp_features.tsv'
@@ -39,7 +39,7 @@ decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 best_bleu4 = 0.  # BLEU-4 score right now
 print_freq = 100  # print training/validation stats every __ batches
-checkpoint = None # path to checkpoint, None if none
+checkpoint = None  # "/content/checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar" # path to checkpoint, None if none
 
 
 def main():
@@ -105,11 +105,11 @@ def main():
     # Epochs
     for epoch in range(start_epoch, epochs):
 
-        # Decay learning rate if there is no improvement for 8 consecutive epochs, and terminate training after 20
-        if epochs_since_improvement == 20:
-            break
-        if epochs_since_improvement > 0 and epochs_since_improvement % 8 == 0:
-            adjust_learning_rate(decoder_optimizer, 0.8)
+        # # Decay learning rate if there is no improvement for 8 consecutive epochs, and terminate training after 20
+        # if epochs_since_improvement == 20:
+        #     break
+        # if epochs_since_improvement > 0 and epochs_since_improvement % 8 == 0:
+        #     adjust_learning_rate(decoder_optimizer, 0.8)
 
         # One epoch's training
         train(train_loader=train_loader,
@@ -184,17 +184,15 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
 
         # Remove timesteps that we didn't decode at, or are pads
         # pack_padded_sequence is an easy trick to do this
-        # TODO:
-        #scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
-        #targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+
         scores = pack_padded_sequence(scores, decode_lengths, batch_first=True)
         targets = pack_padded_sequence(targets, decode_lengths, batch_first=True)
 
         # Calculate loss
-        #TODO: .data
         loss_d = criterion_dis(scores_d, targets_d.long())
         loss_g = criterion_ce(scores.data, targets.data)
-        loss = loss_g + (10 * loss_d)
+        #loss = loss_g + (10 * loss_d)
+        loss = loss_d
 
         # Backpropagation
         decoder_optimizer.zero_grad()
@@ -356,6 +354,34 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
         print("img_id:", val_numpy[indexes[rand], 0])
         print("reference:", refs[0], "\n", refs[1], "\n", refs[2])
         print("hypotheses:", hyp)
+
+        """
+        id_list = list()
+        for index in indexes:
+            id_list.append(val_numpy[index,0])
+
+        references_list = list()
+        hypotheses_list = list()
+
+        for ref_numeric in references:
+            refs = list()
+            for reference in ref_numeric:
+                ref = list()
+                for word in reference:
+                    ref.append(index2word[word])
+                refs.append(ref)
+            references_list.append(refs)
+
+        for hyp_numeric in hypotheses:
+            hyp = list()
+            for word in hyp_numeric:
+                hyp.append(index2word[word])
+            hypotheses_list.append(hyp)
+
+        results = [id_list] + [hypotheses_list] + [references_list]
+        df = pd.DataFrame(np.array(results).T, columns=["id","hypotheses","reference"])
+        df.to_csv("results.csv")
+        """
 
     return bleu4
 
