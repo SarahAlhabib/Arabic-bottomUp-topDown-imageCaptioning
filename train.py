@@ -192,7 +192,7 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
         loss_d = criterion_dis(scores_d, targets_d.long())
         loss_g = criterion_ce(scores.data, targets.data)
         #loss = loss_g + (10 * loss_d)
-        loss = loss_d
+        loss = loss_g
 
         # Backpropagation
         decoder_optimizer.zero_grad()
@@ -278,7 +278,8 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
             # Calculate loss
             loss_d = criterion_dis(scores_d, targets_d.long())
             loss_g = criterion_ce(scores.data, targets.data)
-            loss = loss_g + (10 * loss_d)
+            #loss = loss_g + (10 * loss_d)
+            loss = loss_g
 
             # Keep track of metrics
             losses.update(loss.item(), sum(decode_lengths))
