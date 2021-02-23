@@ -1,42 +1,57 @@
 
 import torch.backends.cudnn as cudnn
 import torch.optim
-import torch.utils.data
+from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
-from datasets import *
+import flickrDataset 
+from flickrDataset import Flickr8kDataset
 from utils import *
 from nltk.translate.bleu_score import corpus_bleu
 import torch.nn.functional as F
 from tqdm import tqdm
 from nlgeval import NLGEval
+import pickle
+import pandas as pd
+import numpy as np
 
 # Parameters
+caption_file = '/content/Flickr8k.arabic.full.tsv'
+images_features_file = '/content/flickr8k_bottomUp_features.tsv'
+embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
+data_name = 'Arabic_flickr8k_3_cap_per_img'
+"""
 data_folder = 'final_dataset'  # folder with data files saved by create_input_files.py
 data_name = 'flickr8k_5_cap_per_img_5_min_word_freq'  # base name shared by data files
-checkpoint_file = 'BEST_checkpoint_flickr8k_3_cap_per_img_5_min_word_freq.pth.tar'  # model checkpoint
-
-word_map_file = 'WORDMAP_flickr8k_3_cap_per_img_5_min_word_freq.json'  # word map, ensure it's the same the data was encoded with and the model was trained with
+"""
+checkpoint_file = 'BEST_checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar' # model checkpoint
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 
+# Read word map
+with open('tokenizer.pickle', 'rb') as handle:
+    tokenizer = pickle.load(handle)
+
+word_map = tokenizer.word_index
+index2word = {v:k for k,v in word_map.items()}
+vocab_size = len(word_map.keys())
+
+# Read features
+features = pd.read_csv(images_features_file, sep='\t')
+features = features.to_numpy()
+print("done downloading")
+
 # Load model
-torch.nn.Module.dump_patches = True #line added
-checkpoint = torch.load(checkpoint_file,map_location = device)
+#torch.nn.Module.dump_patches = True #line added
+checkpoint = torch.load(checkpoint_file)
 decoder = checkpoint['decoder']
 decoder = decoder.to(device)
 decoder.eval()
 # not consider about encoder phase
 nlgeval = NLGEval()  # loads the evaluator
+batch_size = 1
+workers = 1  # for data-loading; right now, only 1 works with h5py
 
-# Load word map (word2ix) 
-# need modification here
-word_map_file = os.path.join(data_folder, 'WORDMAP_' + data_name + '.json')# line added , i think because the generated files by tsv.py
-with open(word_map_file, 'r') as j:
-    word_map = json.load(j)
-rev_word_map = {v: k for k, v in word_map.items()}
-vocab_size = len(word_map)
 
-#missing Normalization transform
 
 def evaluate(beam_size):
     """
@@ -45,9 +60,8 @@ def evaluate(beam_size):
     :return: Official MSCOCO evaluator scores - bleu4, cider, rouge, meteor
     """
     # DataLoader
-    loader = torch.utils.data.DataLoader(
-        CaptionDataset(data_folder, data_name, 'TEST'),
-        batch_size=1, shuffle=True, num_workers=1, pin_memory=torch.cuda.is_available())
+    Test_loader = DataLoader(Flickr8kDataset(features=features, split='TEST'),
+                            batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Lists to store references (true captions), and hypothesis (prediction) for each image
     # If for n images, we have n hypotheses, and references a, b, c... for each image, we need -
@@ -56,15 +70,14 @@ def evaluate(beam_size):
     hypotheses = list()
 
     # For each image
-    for i, (image_features, caps, caplens, allcaps) in enumerate(
-            tqdm(loader, desc="EVALUATING AT BEAM SIZE " + str(beam_size))):
+    for i, (imgs, caps, caplens, allcaps) in enumerate(Test_loader):
 
         k = beam_size
 
         # Move to GPU device, if available
-        image_features = image_features.to(device)  # (1, 3, 256, 256)
-        image_features_mean = image_features.mean(1)
-        image_features_mean = image_features_mean.expand(k,2048)
+        imgs = imgs.to(device)  # (1, 3, 256, 256)
+        imgs_mean = imgs.mean(1)
+        imgs_mean = imgs_mean.expand(k,2048)
         # compute mean here instead of normalize before
         # Tensor to store top k previous words at each step; now they're just <start>
         k_prev_words = torch.LongTensor([[word_map['<start>']]] * k).to(device)  # (k, 1)
@@ -89,13 +102,13 @@ def evaluate(beam_size):
 
             embeddings = decoder.embedding(k_prev_words).squeeze(1)  # (s, embed_dim)
             h1,c1 = decoder.top_down_attention(
-                torch.cat([h2,image_features_mean,embeddings], dim=1),
+                torch.cat([h2,imgs_mean,embeddings], dim=1),
                 (h1,c1))  # (batch_size_t, decoder_dim)
-            at1 = decoder.att1(image_features)  
+            at1 = decoder.att1(imgs)  
             at2 = decoder.att2(h1)             
             at3 = decoder.att3(decoder.dropout(decoder.tanh(at1 + at2.unsqueeze(1)))).squeeze(2)  # (batch_size, 36)
             alpha= decoder.att4(at3)  
-            attention_weighted_encoding = (image_features * alpha.unsqueeze(2)).sum(dim=1) 
+            attention_weighted_encoding = (imgs * alpha.unsqueeze(2)).sum(dim=1) 
             #attention_weighted_encoding = decoder.attention(image_features,h1)
             h2,c2 = decoder.language_model(
                 torch.cat([attention_weighted_encoding,h1], dim=1),(h2,c2))
@@ -139,7 +152,7 @@ def evaluate(beam_size):
             c1 = c1[prev_word_inds[incomplete_inds]]
             h2 = h2[prev_word_inds[incomplete_inds]]
             c2 = c2[prev_word_inds[incomplete_inds]]
-            image_features_mean = image_features_mean[prev_word_inds[incomplete_inds]]
+            imgs_mean = imgs_mean[prev_word_inds[incomplete_inds]]
             top_k_scores = top_k_scores[incomplete_inds].unsqueeze(1)
             k_prev_words = next_word_inds[incomplete_inds].unsqueeze(1)
 
