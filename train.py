@@ -145,8 +145,8 @@ def train(train_loader, decoder, criterion_ce, criterion_dis, decoder_optimizer,
         Performs one epoch's training.
         :param train_loader: DataLoader for training data
         :param decoder: decoder model
-        :param criterion_ce: attention layer loss
-        :param criterion_dis: language layer loss
+        :param criterion_ce: language layer loss
+        :param criterion_dis: attention layer loss
         :param decoder_optimizer: optimizer to update decoder's weights
         :param epoch: epoch number
         """
@@ -230,7 +230,9 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
     Performs one epoch's validation.
     :param val_loader: DataLoader for validation data.
     :param decoder: decoder model
-    :param criterion: loss layer
+    :param criterion_ce: language layer loss
+    :param criterion_dis: attention layer loss
+    :param index2word: wordmap
     :return: BLEU-4 score
     """
     decoder.eval()  # eval mode (no dropout or batchnorm)
@@ -356,7 +358,7 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
         print("reference:", refs[0], "\n", refs[1], "\n", refs[2])
         print("hypotheses:", hyp)
 
-        """
+
         id_list = list()
         for index in indexes:
             id_list.append(val_numpy[index,0])
@@ -382,7 +384,7 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
         results = [id_list] + [hypotheses_list] + [references_list]
         df = pd.DataFrame(np.array(results).T, columns=["id","hypotheses","reference"])
         df.to_csv("results.csv")
-        """
+
 
     return bleu4
 
