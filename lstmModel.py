@@ -15,28 +15,16 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
 
         self.features_dim = features_dim
-        self.attention_dim = attention_dim
         self.embed_dim = embed_dim
         self.decoder_dim = decoder_dim
         self.vocab_size = vocab_size
         self.dropout = dropout
 
         self.embedding = nn.Embedding(vocab_size, embed_dim)  # embedding layer
-
-        self.top_down_attention = nn.LSTMCell(embed_dim + features_dim + decoder_dim, decoder_dim,
-                                              bias=True)  # top down attention LSTMCell
-
         self.att1 = nn.Linear(features_dim, attention_dim)  # attention layer
-        self.att2 = nn.Linear(decoder_dim, attention_dim)
-        self.att3 = nn.Linear(attention_dim, 1)
-        self.tanh = nn.Tanh()
         self.dropout = nn.Dropout(p=dropout)
-        self.att4 = nn.Softmax(dim=1)
-
-        # self.language_model = nn.LSTMCell(features_dim + decoder_dim, decoder_dim, bias=True)  # language model LSTMCell
         self.language_model = nn.LSTMCell(embed_dim, decoder_dim, bias=True)
         self.word = nn.Linear(decoder_dim, vocab_size)
-        self.act = nn.Softmax(dim=1)
 
         self.init_weights()  # initialize some layers with the uniform distribution
 
@@ -99,7 +87,6 @@ class Decoder(nn.Module):
 
         # Initialize LSTM state
         h1, c1 = self.init_hidden_state(batch_size)  # (batch_size, decoder_dim)
-        h2, c2 = self.init_hidden_state(batch_size)  # (batch_size, decoder_dim)
 
         # intialize hidden state with bottom up features mean
         h1 = self.att1(image_features_mean[:batch_size])
@@ -115,7 +102,7 @@ class Decoder(nn.Module):
             batch_size_t = sum([l > t for l in decode_lengths])
 
             h1, c1 = self.language_model(embeddings[:batch_size_t, t, :], (h1[:batch_size_t], c1[:batch_size_t]))
-            preds = self.act(self.word(self.dropout(h1)))  # (batch_size_t, vocab_size)
+            preds = self.word(self.dropout(h1))  # (batch_size_t, vocab_size)
             predictions[:batch_size_t, t, :] = preds
 
         return predictions, predictions1, encoded_captions, decode_lengths, sort_ind
