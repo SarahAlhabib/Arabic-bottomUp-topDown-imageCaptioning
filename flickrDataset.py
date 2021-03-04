@@ -27,29 +27,23 @@ class Flickr8kDataset(Dataset):
         """
         Gets an image features by id
 
-        :param id: name of targeted image
+        :param id_name: name of targeted image
         :return: an encoded image
         """
         img_index = np.where(self.features == id_name)
         img_index = (img_index[0])[0]
-        #print(id_name, img_index)
         num_boxes = self.features[img_index, 7]
+
         encoded = self.features[img_index, 9]
         decoded_features = np.frombuffer(base64.b64decode(encoded), np.float32)
         decode_reshape = decoded_features.reshape(num_boxes, 2048)
         decoded_features_tensor = torch.from_numpy(decode_reshape)
-        #print(decoded_features_tensor.shape)
-        decoded_features_mean = decoded_features_tensor.mean(0)
-        #print(decoded_features_mean.shape)
 
         return decoded_features_tensor
 
     def numeralize_captions(self, id_name, i):
         captions_text = self.captions_dic[id_name]
-        #print("captions text: ", captions_text)
         all_captions, caplens = tokenize_captions(captions_text, self.tokenizer, self.max_len)
-        #print("caplens = ", caplens)
-        #print("all_captions: ", all_captions)
         caption = torch.LongTensor(all_captions[i])
         caplen = torch.LongTensor([caplens[i]])
         all_captions = torch.LongTensor(all_captions)
@@ -62,6 +56,8 @@ class Flickr8kDataset(Dataset):
 
         :return: number of samples in data set
         """
+        if self.split == "TEST":
+            return len(self.captions_dic.keys())
         return len(self.captions_dic.keys())*3
 
     def __getitem__(self, index):
@@ -73,22 +69,19 @@ class Flickr8kDataset(Dataset):
         :return: a sample of data as a dict
         """
         list_id = list(self.captions_dic)
-        id_name = list_id[index // 3]
+
+        if self.split == "TEST":
+            id_name = list_id[index]
+        else:
+            id_name = list_id[index // 3]
 
         img = self.get_encoded_image(id_name)  # image features
-        caption, caption_length, all_captions = self.numeralize_captions(id_name, index%3)
+        caption, caption_length, all_captions = self.numeralize_captions(id_name, index % 3)
 
         if self.split == 'TRAIN':
             return img, caption, caption_length
+        elif self.split == 'TEST':
+            return img, caption, caption_length, all_captions, torch.tensor(index)
         else:
             return img, caption, caption_length, all_captions, torch.tensor(index // 3)
 
-"""
-filename = "/Users/sarahalhabib/Documents/مستوى ثامن/Flickr8k.arabic.full.txt"
-create_input_files(filename)
-dataset = Flickr8kDataset()
-print("dataset len = ", dataset.__len__())
-img, caption, caption_length=dataset.__getitem__(448) #149 1
-print(img.shape, caption.shape, caption_length.shape)
-print(caption, caption_length)
-"""
