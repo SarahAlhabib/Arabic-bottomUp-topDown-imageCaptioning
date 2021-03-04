@@ -39,6 +39,7 @@ class Decoder(nn.Module):
         self.att4 = nn.Softmax(dim=1)
 
         self.language_model = nn.LSTMCell(features_dim + decoder_dim, decoder_dim, bias=True)  # language model LSTMCell
+        self.word1 = nn.Linear(decoder_dim, vocab_size)
         self.word = nn.Linear(decoder_dim, vocab_size)
         self.act = nn.Softmax(dim=1)
 
@@ -128,10 +129,10 @@ class Decoder(nn.Module):
             at3 = self.att3(self.dropout(self.tanh(at1 + at2.unsqueeze(1)))).squeeze(2)  # (batch_size, 36)
             alpha = self.att4(at3)
             attention_weighted_encoding = (image_features[:batch_size_t] * alpha.unsqueeze(2)).sum(dim=1)
-            preds1 = self.word(self.dropout(h1))
+            preds1 = self.word1(self.dropout(h1))
 
             h2, c2 = self.language_model(torch.cat([attention_weighted_encoding[:batch_size_t],h1[:batch_size_t]], dim=1),(h2[:batch_size_t], c2[:batch_size_t]))
-            preds = self.act(self.word(self.dropout(h2))) # (batch_size_t, vocab_size)
+            preds = self.word(self.dropout(h2)) # (batch_size_t, vocab_size)
 
             predictions[:batch_size_t, t, :] = preds
             predictions1[:batch_size_t, t, :] = preds1
