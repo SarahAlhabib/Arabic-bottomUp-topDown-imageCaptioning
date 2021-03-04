@@ -37,7 +37,7 @@ class Flickr8kDataset(Dataset):
         encoded = self.features[img_index, 9]
         decoded_features = np.frombuffer(base64.b64decode(encoded), np.float32)
         decode_reshape = decoded_features.reshape(num_boxes, 2048)
-        decoded_features_tensor = torch.tensor(decode_reshape)
+        decoded_features_tensor = torch.from_numpy(decode_reshape)
         #print(decoded_features_tensor.shape)
         decoded_features_mean = decoded_features_tensor.mean(0)
         #print(decoded_features_mean.shape)
