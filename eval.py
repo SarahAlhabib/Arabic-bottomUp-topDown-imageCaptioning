@@ -108,7 +108,7 @@ def evaluate(beam_size):
             h2 ,c2 = decoder.language_model(
                 torch.cat([attention_weighted_encoding ,h1], dim=1) ,(h2 ,c2))
 
-            scores = decoder.act(decoder.word(h2))  # (s, vocab_size)
+            scores = F.log_softmax(decoder.word(h2), dim=1)  # (s, vocab_size)
 
             # Add
             scores = top_k_scores.expand_as(scores) + scores  # (s, vocab_size)
