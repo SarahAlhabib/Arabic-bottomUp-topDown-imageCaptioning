@@ -104,11 +104,11 @@ def main():
     # Epochs
     for epoch in range(start_epoch, epochs):
 
-        # # Decay learning rate if there is no improvement for 8 consecutive epochs, and terminate training after 20
-        # if epochs_since_improvement == 20:
-        #     break
-        # if epochs_since_improvement > 0 and epochs_since_improvement % 8 == 0:
-        #     adjust_learning_rate(decoder_optimizer, 0.8)
+        # Decay learning rate if there is no improvement for 8 consecutive epochs, and terminate training after 20
+        if epochs_since_improvement == 20:
+            break
+        if epochs_since_improvement > 0 and epochs_since_improvement % 8 == 0:
+            adjust_learning_rate(decoder_optimizer, 0.8)
 
         # One epoch's training
         train(train_loader=train_loader,
