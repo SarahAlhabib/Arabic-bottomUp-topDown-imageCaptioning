@@ -75,8 +75,7 @@ def main():
         decoder.load_pretrained_embeddings(embeddings)
         decoder.fine_tune_embeddings(True)
 
-        decoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, decoder.parameters()),
-                                             lr=decoder_lr)
+        decoder_optimizer = torch.optim.Adamax(params=filter(lambda p: p.requires_grad, decoder.parameters()))
 
     else:
         checkpoint = torch.load(checkpoint)
