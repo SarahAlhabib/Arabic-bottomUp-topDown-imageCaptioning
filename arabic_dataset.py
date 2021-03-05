@@ -45,7 +45,7 @@ class Arabic_preprocessing:
         text = self.remove_punctuations(text)
         text = self.normalize_arabic(text)
         text = self.remove_english_characters(text)
-        text = ' '.join([w for w in text.split() if len(w)>1 and w.isalpha()]) #remove one-character & numeric words
+        text = ' '.join([w for w in text.split() if w.isalpha()]) #remove numeric words
         return text
 
 
