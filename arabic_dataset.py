@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+
+# this code is adapted from https://github.com/ObeidaElJundi/Arabic-Image-Captioning/blob/master/resources/arabic_preprocessing.py
+
+
 from pyarabic.araby import strip_tatweel, strip_tashkeel
 import string
 from string import punctuation
@@ -208,88 +212,4 @@ def tokenize_captions(captions_list, tokenizer, max_len):
     return pad_sequences, captions_lengths
 
 
-
-
-
-
-
-'''
-filename = "/Users/sarahalhabib/Documents/مستوى ثامن/Flickr8k.arabic.full.txt"
-
-captions_file_text = load_data(filename)
-
-captions = get_captions(captions_file_text)
-print('Captions #:', len(captions))
-print('Caption example:', list(captions.values())[0])
-
-k = '299178969_5ca1de8e40'  # 2660480624_45f88b3022
-print('before >>', captions[k])
-preprocess_captions(captions)
-print('captions preprocessed :)')
-print('after >>', captions[k])
-
-# يوضح أن (preprocess_captions(cpts)) تشتغل بشكل صحيح
-re.search('\w+', ' 456')
-i = 0
-for k, v in captions.items():
-    print(v)
-    i += 1
-    if i == 10: break
-
-add_start_end_to_captions(captions)
-
-for k, v in captions.items():
-    for cpt in v:
-        a = [w for w in cpt.split() if len(w) == 1 and w != 'و']
-        if len(a) > 0: print(cpt)
-
-vocabulary = get_vocabulary(captions)
-print('Vocabulary size (number of unique words):', len(vocabulary))
-
-frequent_vocabulary = get_frequent_vocabulary(captions, 3)
-print('Frequent vocabulary size (number of unique words):', len(frequent_vocabulary))
-
-y = []
-for k, image_captions in captions.items():
-    for image_caption in image_captions:
-        y.append(image_caption)
-print(len(y))#24273
-
-
-num_words = len(frequent_vocabulary) + 1
-tokenizer = keras.preprocessing.text.Tokenizer(num_words=num_words, oov_token='<UNK>', lower=False, filters='') # num_words=num_words, 
-tokenizer.fit_on_texts(y)
-tokenizer.word_index['<PAD>'] = 0
-##### fix for keeping only most common `num_words`
-tokenizer.word_index = {e:i for e,i in tokenizer.word_index.items() if i <= num_words} # <= because tokenizer is 1 indexed
-#####
-word2index = tokenizer.word_index
-index2word = {v:k for k,v in word2index.items()}
-#tokenize captions
-y_tok = tokenizer.texts_to_sequences(y)
-
-print(len(frequent_vocabulary), len(word2index))
-
-print('tokenized caption:', y_tok[0])
-print('untokenized caption:', tokenizer.sequences_to_texts([y_tok[0]])[0])
-
-# Pad each vector to the max_length of the captions
-# If you do not provide a max_length value, pad_sequences calculates it automatically
-cap_vector = keras.preprocessing.sequence.pad_sequences(y_tok, padding='post')
-
-# Calculates the max_length, which is used to store the attention weights
-max_length = calc_max_length(y_tok)
-
-
-print(captions[k])
-
-print(y_tok)
-print(cap_vector)
-print(max_length)
-
-create_input_files(filename)
-train_dic = get_captions_dic("TRAIN")
-
-print(train_dic)
-'''
 
