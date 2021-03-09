@@ -1,27 +1,52 @@
-#loading the images
 import torch
-import pandas as pd
 from torch.utils.data import Dataset
 from arabic_dataset import get_captions_dic, get_tokenizer, tokenize_captions, create_input_files
 import numpy as np
 import base64
+from PIL import Image
+import os
+import torchvision.transforms as transforms
+
 
 class Flickr8kDataset(Dataset):
-    def __init__(self, features, split='TRAIN'):
+    def __init__(self, imgs, split='TRAIN', withEncoder=False):
         """
-        Initialize data set as a list of IDs corresponding to each item of data set
-
-        :param img_dir: path to image files as a uncompressed tar archive
-        :param txt_path: a text file containing names of all of images line by line
-        :param transform: apply some transforms like cropping, rotating, etc on input image
+        :param features: images' features numpy array
+        :param split: data split TRAIN, VAL, or TEST
         """
 
         self.split = split
         assert self.split in {'TRAIN', 'VAL', 'TEST'}
 
+        self.withEncoder = withEncoder
         self.captions_dic = get_captions_dic(self.split)
-        self.features = features
         self.tokenizer, self.max_len = get_tokenizer(self.captions_dic)
+
+        if self.withEncoder:
+            self.imgs_path = imgs
+        else:
+            self.features = imgs
+
+    def get_img(self, id_name):
+        """
+        Gets an image by its id
+
+        :param id_name: name of targeted image
+        :return: a transformed image
+        """
+        transform = transforms.Compose(
+            [
+                transforms.Resize((356, 356)),
+                transforms.RandomCrop((299, 299)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
+
+        img = Image.open(os.path.join(self.imgs_path, id_name)).convert("RGB")
+        transformed_img = transform(img)
+
+        return transformed_img
 
     def get_encoded_image(self, id_name):
         """
@@ -75,7 +100,11 @@ class Flickr8kDataset(Dataset):
         else:
             id_name = list_id[index // 3]
 
-        img = self.get_encoded_image(id_name)  # image features
+        if self.withEncoder:
+            img = self.get_img(id_name)
+        else:
+            img = self.get_encoded_image(id_name)  # image features
+
         caption, caption_length, all_captions = self.numeralize_captions(id_name, index % 3)
 
         if self.split == 'TRAIN':
