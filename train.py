@@ -95,10 +95,10 @@ def main():
 
     # Custom dataloaders
     # split in {"TRAIN", "VAL", "TEST"}
-    train_loader = DataLoader(Flickr8kDataset(features=features, split='TRAIN'),
+    train_loader = DataLoader(Flickr8kDataset(imgs=features, split='TRAIN'),
                             batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
-    val_loader = DataLoader(Flickr8kDataset(features=features, split='VAL'),
+    val_loader = DataLoader(Flickr8kDataset(imgs=features, split='VAL'),
                             batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Epochs

@@ -47,7 +47,6 @@ batch_size = 1
 workers = 1  # for data-loading; right now, only 1 works with h5py
 
 
-
 def evaluate(beam_size):
     """
     Evaluation
@@ -55,7 +54,7 @@ def evaluate(beam_size):
     :return: Official MSCOCO evaluator scores - bleu4, cider, rouge, meteor
     """
     # DataLoader
-    Test_loader = DataLoader(Flickr8kDataset(features=features, split='TEST'),
+    Test_loader = DataLoader(Flickr8kDataset(imgs=features, split='TEST'),
                              batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Lists to store references (true captions), and hypothesis (prediction) for each image
