@@ -43,7 +43,7 @@ class Flickr8kDataset(Dataset):
             ]
         )
 
-        img = Image.open(os.path.join(self.imgs_path, id_name)).convert("RGB")
+        img = Image.open(os.path.join(self.imgs_path, id_name+'.jpg')).convert("RGB")
         transformed_img = transform(img)
 
         return transformed_img
@@ -113,4 +113,3 @@ class Flickr8kDataset(Dataset):
             return img, caption, caption_length, all_captions, torch.tensor(index)
         else:
             return img, caption, caption_length, all_captions, torch.tensor(index // 3)
-
