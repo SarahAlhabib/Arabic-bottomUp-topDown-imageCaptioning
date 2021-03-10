@@ -9,7 +9,7 @@ import time
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pack_padded_sequence
-from  models  import  EncoderResnet , DecoderLSTM
+from  ResnetModel import EncoderResnet, DecoderLSTM
 from utils import load_embeddings, adjust_learning_rate, save_checkpoint, AverageMeter, clip_gradient, accuracy
 from nltk.translate.bleu_score import corpus_bleu
 from flickrDataset import Flickr8kDataset
@@ -21,6 +21,7 @@ import numpy as np
 caption_file = '/content/Flickr8k.arabic.full.tsv'
 embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
+imgs_file = '/content/images'
 
 # Model parameters
 emb_dim = 300  # dimension of word embeddings
@@ -35,7 +36,7 @@ epochs = 120  # number of epochs to train for (if early stopping is not triggere
 epochs_since_improvement = 0  # keeps track of number of epochs since there's been an improvement in validation BLEU
 batch_size = 32
 workers = 1  # for data-loading; right now, only 1 works with h5py
-lr = 4e-4  # learning rate for decoder  and encoder 
+lr = 4e-4  # learning rate for decoder  and encoder
 grad_clip = 5.  # clip gradients at an absolute value of
 best_bleu4 = 0.  # BLEU-4 score right now
 print_freq = 100  # print training/validation stats every __ batches
@@ -57,40 +58,33 @@ def main():
     index2word = {v:k for k,v in word_map.items()}
     vocab_size = len(word_map.keys())
 
-    # Read features
-    """features = pd.read_csv(images_features_file, sep='\t')
-    features = features.to_numpy()
-    print("done downloading")"""
 
     # Initialize / load checkpoint
     if checkpoint is None:
-        EncoderResnet = EncoderResnet(decoder_dim)
-        DecoderLSTM   = DecoderLSTM(emb_dim, decoder_dim, vocab_size=vocab_size, num_layers=1)
-        
-       
+        encoder = EncoderResnet(decoder_dim)
+        decoder = DecoderLSTM(emb_dim, decoder_dim, vocab_size=vocab_size, num_layers=1)
+
         # embeddings
         embeddings = load_embeddings(embeddings_file, word_map)
-        DecoderLSTM.load_pretrained_embeddings(embeddings)
-        DecoderLSTM.fine_tune_embeddings(True)
-  
-                                             
+        decoder.load_pretrained_embeddings(embeddings)
+        decoder.fine_tune_embeddings(True)
 
-        EncoderResnet_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, EncoderResnet.parameters()))
-        DecoderLSTM_optimizer = torch.optim.Adamax(params=filter(lambda p: p.requires_grad, DecoderLSTM.parameters()))
+        EncoderResnet_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()))
+        DecoderLSTM_optimizer = torch.optim.Adamax(params=filter(lambda p: p.requires_grad, decoder.parameters()))
 
     else:
         checkpoint = torch.load(checkpoint)
         start_epoch = checkpoint['epoch'] + 1
         epochs_since_improvement = checkpoint['epochs_since_improvement']
         best_bleu4    = checkpoint['bleu-4']
-        DecoderLSTM   = checkpoint['DecoderLSTM ']
+        decoder   = checkpoint['DecoderLSTM ']
         DecoderLSTM_optimizer  = checkpoint['DecoderLSTM_optimizer']
-        EncoderResnet = checkpoint['EncoderResnet']
+        encoder = checkpoint['EncoderResnet']
         EncoderResnet_optimizer = checkpoint['EncoderResnet_optimizer']
 
     # Move to GPU, if available
-        EncoderResnet =  EncoderResnet.to(device)
-        DecoderLSTM   =  DecoderLSTM.to(device)
+        encoder =  EncoderResnet.to(device)
+        decoder   =  DecoderLSTM.to(device)
 
     # Loss functions
     criterion_ce = nn.CrossEntropyLoss().to(device)
@@ -99,10 +93,10 @@ def main():
 
     # Custom dataloaders
     # split in {"TRAIN", "VAL", "TEST"}
-    train_loader = DataLoader(Flickr8kDataset(features=features, split='TRAIN', withEncoder=True),
+    train_loader = DataLoader(Flickr8kDataset(imgs=imgs_file, split='TRAIN', withEncoder=True),
                             batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
-    val_loader = DataLoader(Flickr8kDataset(features=features, split='VAL', withEncoder=True),
+    val_loader = DataLoader(Flickr8kDataset(imgs=imgs_file, split='VAL', withEncoder=True),
                             batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Epochs
@@ -116,10 +110,9 @@ def main():
 
         # One epoch's training
         train(train_loader=train_loader,
-              EncoderResnet=EncoderResnet,
-              DecoderLSTM =DecoderLSTM,
+              EncoderResnet=encoder,
+              DecoderLSTM =decoder,
               criterion_ce=criterion_ce,
-              criterion_dis=criterion_dis,
               EncoderResnet_optimizer= EncoderResnet_optimizer,
               DecoderLSTM_optimizer=DecoderLSTM_optimizer,
               epoch=epoch)
@@ -127,10 +120,9 @@ def main():
         # TODO: call validate
         # One epoch's validation
         recent_bleu4 = validate(val_loader=val_loader,
-                                EncoderResnet=EncoderResnet, #??
-                                DecoderLSTM = DecoderLSTM,
+                                EncoderResnet=encoder, #??
+                                DecoderLSTM = decoder,
                                 criterion_ce=criterion_ce,
-                                criterion_dis=criterion_dis,
                                 index2word=index2word)
 
         # Check if there was an improvement
@@ -147,7 +139,7 @@ def main():
         save_checkpoint(data_name, epoch, epochs_since_improvement, EncoderResnet,DecoderLSTM, EncoderResnet_optimizer , DecoderLSTM_optimizer, recent_bleu4, is_best)
 
 
-def train(train_loader, EncoderResnet, DecoderLSTM , criterion_ce, decoder_optimizer, epoch):
+def train(train_loader, EncoderResnet, DecoderLSTM , criterion_ce, EncoderResnet_optimizer, DecoderLSTM_optimizer, epoch):
     """
         Performs one epoch's training.
         :param train_loader: DataLoader for training data
