@@ -67,7 +67,7 @@ def save_checkpoint(data_name, epoch, epochs_since_improvement, decoder, decoder
     :param bleu4: validation BLEU-4 score for this epoch
     :param is_best: is this checkpoint the best so far?
     """
-    if encoder == None:
+    if encoder is None:
         state = {'epoch': epoch,
                  'epochs_since_improvement': epochs_since_improvement,
                  'bleu-4': bleu4,
