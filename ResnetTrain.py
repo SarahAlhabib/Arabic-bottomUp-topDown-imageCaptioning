@@ -22,7 +22,7 @@ import numpy as np
 caption_file = '/content/Flickr8k.arabic.full.tsv'
 embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
-imgs_file = '/content/Flicker8k_Dataset'
+imgs_file = '/content/'
 
 # Model parameters
 emb_dim = 300  # dimension of word embeddings
