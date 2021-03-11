@@ -6,7 +6,7 @@ from utils import *
 from nltk.translate.bleu_score import corpus_bleu
 import torch.nn.functional as F
 from tqdm import tqdm
-# from nlgeval import NLGEval
+from nlgeval import NLGEval
 import pickle
 import pandas as pd
 import numpy as np
@@ -41,7 +41,7 @@ decoder = checkpoint['decoder']
 decoder = decoder.to(device)
 decoder.eval()
 # not consider about encoder phase
-# nlgeval = NLGEval()  # loads the evaluator
+nlgeval = NLGEval()  # loads the evaluator
 batch_size = 1
 workers = 1  # for data-loading; right now, only 1 works with h5py
 
@@ -53,7 +53,7 @@ def evaluate(beam_size):
     :return: Official MSCOCO evaluator scores - bleu4, cider, rouge, meteor
     """
     # DataLoader
-    Test_loader = DataLoader(Flickr8kDataset(features=features, split='TEST'),
+    Test_loader = DataLoader(Flickr8kDataset(imgs=features, split='TEST'),
                              batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Lists to store references (true captions), and hypothesis (prediction) for each image
@@ -64,7 +64,8 @@ def evaluate(beam_size):
     indexes = list()
 
     # For each image
-    for i, (imgs, caps, caplens, allcaps, index) in enumerate(Test_loader):
+    for i, (imgs, caps, caplens, allcaps, index) in enumerate(
+            tqdm(Test_loader, desc="EVALUATING AT BEAM SIZE " + str(beam_size))):
 
         k = beam_size
 
@@ -113,9 +114,9 @@ def evaluate(beam_size):
             # Convert unrolled indices to actual indices of scores
             prev_word_inds = top_k_words // vocab_size  # (s)
             next_word_inds = top_k_words % vocab_size  # (s)
-
-            prev_word_inds = torch.LongTensor(prev_word_inds)
-            next_word_inds = torch.LongTensor(next_word_inds)
+            
+            prev_word_inds = torch.LongTensor(prev_word_inds.to("cpu")).to(device)
+            next_word_inds = torch.LongTensor(next_word_inds.to("cpu")).to(device)
 
             # Add new words to sequences
             seqs = torch.cat([seqs[prev_word_inds], next_word_inds.unsqueeze(1)], dim=1)  # (s, step+1)
@@ -137,8 +138,7 @@ def evaluate(beam_size):
             seqs = seqs[incomplete_inds]
             h1 = h1[prev_word_inds[incomplete_inds]]
             c1 = c1[prev_word_inds[incomplete_inds]]
-            h2 = h2[prev_word_inds[incomplete_inds]]
-            c2 = c2[prev_word_inds[incomplete_inds]]
+            
             imgs_mean = imgs_mean[prev_word_inds[incomplete_inds]]
             top_k_scores = top_k_scores[incomplete_inds].unsqueeze(1)
             k_prev_words = next_word_inds[incomplete_inds].unsqueeze(1)
