@@ -186,19 +186,20 @@ def evaluate(beam_size):
     df.to_csv("results.csv")
 
     # Calculate scores
-    # metrics_dict = nlgeval.compute_metrics(references, hypotheses)
+    metrics_dict = nlgeval.compute_metrics(references, hypotheses)
     bleu_1 = corpus_bleu(references, hypotheses, weights=(1, 0, 0, 0))
     bleu_2 = corpus_bleu(references, hypotheses, weights=(0, 1, 0, 0))
     bleu_3 = corpus_bleu(references, hypotheses, weights=(0, 0, 1, 0))
     bleu_4 = corpus_bleu(references, hypotheses, weights=(0, 0, 0, 1))
-    return bleu_1, bleu_2, bleu_3, bleu_4  # metrics_dict
+    return bleu_1, bleu_2, bleu_3, bleu_4, metrics_dict
 
 
 if __name__ == '__main__':
     beam_size = 5
     # metrics_dict = evaluate(beam_size)
-    bleu_1, bleu_2, bleu_3, bleu_4 = evaluate(beam_size)
+    bleu_1, bleu_2, bleu_3, bleu_4, metrics_dict= evaluate(beam_size)
     print("bleu-1", bleu_1)
     print("bleu-2", bleu_2)
     print("bleu-3", bleu_3)
     print("bleu-4", bleu_4)
+    print(metrics_dict)
