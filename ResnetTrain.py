@@ -7,6 +7,7 @@ import torch
 import torch.optim
 import time
 import torch.nn as nn
+import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pack_padded_sequence
 from  ResnetModel import EncoderResnet, DecoderLSTM
@@ -21,7 +22,7 @@ import numpy as np
 caption_file = '/content/Flickr8k.arabic.full.tsv'
 embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
-imgs_file = '/content/images'
+imgs_file = '/content/Flicker8k_Dataset'
 
 # Model parameters
 emb_dim = 300  # dimension of word embeddings
@@ -32,7 +33,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets de
 
 # Training parameters
 start_epoch = 0  # depends on the checkpoint
-epochs = 120  # number of epochs to train for (if early stopping is not triggered)
+epochs = 10  # number of epochs to train for (if early stopping is not triggered)
 epochs_since_improvement = 0  # keeps track of number of epochs since there's been an improvement in validation BLEU
 batch_size = 32
 workers = 1  # for data-loading; right now, only 1 works with h5py
@@ -77,14 +78,15 @@ def main():
         start_epoch = checkpoint['epoch'] + 1
         epochs_since_improvement = checkpoint['epochs_since_improvement']
         best_bleu4    = checkpoint['bleu-4']
-        decoder   = checkpoint['DecoderLSTM ']
+        decoder   = checkpoint['decoder']
         DecoderLSTM_optimizer  = checkpoint['DecoderLSTM_optimizer']
-        encoder = checkpoint['EncoderResnet']
+        encoder = checkpoint['ecoder']
         EncoderResnet_optimizer = checkpoint['EncoderResnet_optimizer']
 
     # Move to GPU, if available
-        encoder =  EncoderResnet.to(device)
-        decoder   =  DecoderLSTM.to(device)
+        decoder   =  decoder.to(device)
+        encoder   =  ecoder.to(device)
+       
 
     # Loss functions
     criterion_ce = nn.CrossEntropyLoss().to(device)
@@ -110,8 +112,8 @@ def main():
 
         # One epoch's training
         train(train_loader=train_loader,
-              EncoderResnet=encoder,
-              DecoderLSTM =decoder,
+              encoder=encoder,
+              decoder=decoder,
               criterion_ce=criterion_ce,
               EncoderResnet_optimizer= EncoderResnet_optimizer,
               DecoderLSTM_optimizer=DecoderLSTM_optimizer,
@@ -120,8 +122,8 @@ def main():
         # TODO: call validate
         # One epoch's validation
         recent_bleu4 = validate(val_loader=val_loader,
-                                EncoderResnet=encoder, #??
-                                DecoderLSTM = decoder,
+                                encoder=encoder, #??
+                                decoder = decoder,
                                 criterion_ce=criterion_ce,
                                 index2word=index2word)
 
@@ -136,10 +138,10 @@ def main():
 
 
         # Save checkpoint
-        save_checkpoint(data_name, epoch, epochs_since_improvement, EncoderResnet,DecoderLSTM, EncoderResnet_optimizer , DecoderLSTM_optimizer, recent_bleu4, is_best)
+        save_checkpoint(data_name, epoch, epochs_since_improvement, encoder, decoder, EncoderResnet_optimizer , DecoderLSTM_optimizer, recent_bleu4, is_best)
 
 
-def train(train_loader, EncoderResnet, DecoderLSTM , criterion_ce, EncoderResnet_optimizer, DecoderLSTM_optimizer, epoch):
+def train(train_loader, encoder, decoder , criterion_ce, EncoderResnet_optimizer, DecoderLSTM_optimizer, epoch):
     """
         Performs one epoch's training.
         :param train_loader: DataLoader for training data
@@ -151,8 +153,8 @@ def train(train_loader, EncoderResnet, DecoderLSTM , criterion_ce, EncoderResnet
         """
 
   # train mode (dropout and batchnorm is used)
-    DecoderLSTM.train()
-    EncoderResnet.train()
+    decoder.train()
+    encoder.train()
    
 
     batch_time = AverageMeter()  # forward prop. + back prop. time
@@ -171,8 +173,8 @@ def train(train_loader, EncoderResnet, DecoderLSTM , criterion_ce, EncoderResnet
         caplens = caplens.to(device)
 
         # Forward
-        features = EncoderResnet(imgs)
-        scores, sorted_captions, decode_lengths, sort_ind = DecoderLSTM(features, caps, caplens)
+        features = encoder(imgs)
+        scores, sorted_captions, decode_lengths, sort_ind = decoder(features, caps, caplens)
         
         # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
         targets = sorted_captions[:, 1:]
@@ -228,7 +230,7 @@ def train(train_loader, EncoderResnet, DecoderLSTM , criterion_ce, EncoderResnet
                                                                           top5=top5accs))
 
 
-def validate(val_loader, EncoderResnet, DecoderLSTM ,criterion_ce, index2word):
+def validate(val_loader, encoder, decoder ,criterion_ce, index2word):
     """
     Performs one epoch's validation.
     :param val_loader: DataLoader for validation data.
@@ -239,9 +241,9 @@ def validate(val_loader, EncoderResnet, DecoderLSTM ,criterion_ce, index2word):
     :return: BLEU-4 score
     """
  
-    DecoderLSTM.eval()  # eval mode (no dropout or batchnorm)
-    if EncoderResnet is not None:
-        EncoderResnet.eval()
+    decoder.eval()  # eval mode (no dropout or batchnorm)
+    if encoder is not None:
+        encoder.eval()
 
 
     batch_time = AverageMeter()
@@ -264,9 +266,9 @@ def validate(val_loader, EncoderResnet, DecoderLSTM ,criterion_ce, index2word):
             caplens = caplens.to(device)
 
             # Forward prop.
-            if EncoderResnet is not None:
-                features = EncoderResnet(imgs)
-            scores, sorted_captions, decode_lengths, sort_ind = DecoderLSTM(features, caps, caplens)
+            if  encoder is not None:
+                 features = encoder(imgs)
+            scores, sorted_captions, decode_lengths, sort_ind = decoder(features, caps, caplens)
 
             # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
             targets = encoded_captions[:, 1:]
