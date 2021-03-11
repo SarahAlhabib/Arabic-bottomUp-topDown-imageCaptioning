@@ -79,9 +79,9 @@ def main():
         epochs_since_improvement = checkpoint['epochs_since_improvement']
         best_bleu4    = checkpoint['bleu-4']
         decoder   = checkpoint['decoder']
-        DecoderLSTM_optimizer  = checkpoint['DecoderLSTM_optimizer']
+        DecoderLSTM_optimizer  = checkpoint['decoder_optimizer']
         encoder = checkpoint['ecoder']
-        EncoderResnet_optimizer = checkpoint['EncoderResnet_optimizer']
+        EncoderResnet_optimizer = checkpoint['encoder_optimizer']
 
     # Move to GPU, if available
     decoder = decoder.to(device)
