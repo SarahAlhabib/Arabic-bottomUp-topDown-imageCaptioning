@@ -18,7 +18,7 @@ embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
 imgs_file = '/content/images'
 
-checkpoint_file = "/content/drive/MyDrive/checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar"  # model checkpoint
+checkpoint_file = "/content/drive/MyDrive/BEST_checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar"  # model checkpoint
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
 # cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 
@@ -29,7 +29,6 @@ with open('tokenizer.pickle', 'rb') as handle:
 word_map = tokenizer.word_index
 index2word = {v: k for k, v in word_map.items()}
 vocab_size = len(word_map.keys())
-
 
 # Load model
 # torch.nn.Module.dump_patches = True #line added
@@ -52,7 +51,7 @@ def evaluate(beam_size):
     :return: Official MSCOCO evaluator scores - bleu4, cider, rouge, meteor
     """
     # DataLoader
-    Test_loader = DataLoader(Flickr8kDataset(imgs=imgs_file, split='TEST'),
+    Test_loader = DataLoader(Flickr8kDataset(imgs=imgs_file, split='TEST', withEncoder=True),
                              batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Lists to store references (true captions), and hypothesis (prediction) for each image
@@ -71,7 +70,7 @@ def evaluate(beam_size):
         # Move to GPU device, if available
         imgs = imgs.to(device)  # (1, 3, 256, 256)
         features = encoder(imgs)
-        features = features.expand(k, 2048)
+        features = features.expand(k, 512)
 
         # Tensor to store top k previous words at each step; now they're just <start>
         k_prev_words = torch.LongTensor([[word_map['<START>']]] * k).to(device)  # (k, 1)
@@ -98,7 +97,7 @@ def evaluate(beam_size):
 
             embeddings = decoder.embedding(k_prev_words).squeeze(1)  # (s, embed_dim)
             h1, c1 = decoder.lstm(embeddings, (h1, c1))
-            scores = F.log_softmax(decoder.word(h1), dim=1)  # (s, vocab_size)
+            scores = F.log_softmax(decoder.linear(h1), dim=1)  # (s, vocab_size)
 
             # Add
             scores = top_k_scores.expand_as(scores) + scores  # (s, vocab_size)
@@ -138,7 +137,7 @@ def evaluate(beam_size):
             h1 = h1[prev_word_inds[incomplete_inds]]
             c1 = c1[prev_word_inds[incomplete_inds]]
 
-            imgs_mean = imgs_mean[prev_word_inds[incomplete_inds]]
+            features = features[prev_word_inds[incomplete_inds]]
             top_k_scores = top_k_scores[incomplete_inds].unsqueeze(1)
             k_prev_words = next_word_inds[incomplete_inds].unsqueeze(1)
 
@@ -190,7 +189,7 @@ def evaluate(beam_size):
 
 
 if __name__ == '__main__':
-    beam_size = 5
+    beam_size = 3
 
     metrics_dict = evaluate(beam_size)
     print(metrics_dict)
