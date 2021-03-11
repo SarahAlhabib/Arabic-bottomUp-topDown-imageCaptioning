@@ -36,7 +36,7 @@ class DecoderLSTM(nn.Module):
         self.decoder_dim = decoder_dim
         self.embedding = nn.Embedding(vocab_size, emb_dim)
         self.lstm = nn.LSTMCell(emb_dim, decoder_dim, bias=True)
-        self.linear = nn.Linear(decoder_dim, vocab_size).to()
+        self.linear = nn.Linear(decoder_dim, vocab_size)
         self.dropout = nn.Dropout(p=0.5)
         self.init_weights()  # initialize some layers with the uniform distribution
 
