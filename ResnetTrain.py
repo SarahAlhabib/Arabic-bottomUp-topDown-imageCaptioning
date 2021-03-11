@@ -138,7 +138,7 @@ def main():
 
 
         # Save checkpoint
-        save_checkpoint(data_name, epoch, epochs_since_improvement, encoder, decoder, EncoderResnet_optimizer , DecoderLSTM_optimizer, recent_bleu4, is_best)
+        save_checkpoint(data_name, epoch, epochs_since_improvement, decoder, DecoderLSTM_optimizer, recent_bleu4, is_best, encoder, EncoderResnet_optimizer)
 
 
 def train(train_loader, encoder, decoder , criterion_ce, EncoderResnet_optimizer, DecoderLSTM_optimizer, epoch):
@@ -271,7 +271,7 @@ def validate(val_loader, encoder, decoder ,criterion_ce, index2word):
             scores, sorted_captions, decode_lengths, sort_ind = decoder(features, caps, caplens)
 
             # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
-            targets = encoded_captions[:, 1:]
+            targets = sorted_captions[:, 1:]
            
 
             # Remove timesteps that we didn't decode at, or are pads
