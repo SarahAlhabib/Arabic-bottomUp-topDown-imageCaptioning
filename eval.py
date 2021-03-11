@@ -65,7 +65,8 @@ def evaluate(beam_size):
     indexes = list()
 
     # For each image
-    for i, (imgs, caps, caplens, allcaps, index) in enumerate(Test_loader):
+    for i, (imgs, caps, caplens, allcaps, index) in enumerate(
+            tqdm(Test_loader, desc="EVALUATING AT BEAM SIZE " + str(beam_size))):
 
         k = beam_size
 
