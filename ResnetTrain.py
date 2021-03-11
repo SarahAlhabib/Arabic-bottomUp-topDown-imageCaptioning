@@ -84,8 +84,8 @@ def main():
         EncoderResnet_optimizer = checkpoint['EncoderResnet_optimizer']
 
     # Move to GPU, if available
-        decoder   =  decoder.to(device)
-        encoder   =  ecoder.to(device)
+    decoder = decoder.to(device)
+    encoder = encoder.to(device)
        
 
     # Loss functions
