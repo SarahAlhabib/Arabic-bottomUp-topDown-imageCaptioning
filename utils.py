@@ -55,7 +55,7 @@ def adjust_learning_rate(optimizer, shrink_factor):
     print("The new learning rate is %f\n" % (optimizer.param_groups[0]['lr'],))
 
 
-def save_checkpoint(data_name, epoch, epochs_since_improvement, decoder, decoder_optimizer, bleu4, is_best):
+def save_checkpoint(data_name, epoch, epochs_since_improvement, decoder, decoder_optimizer, bleu4, is_best, encoder=None, encoder_optimizer=None):
 
     """
     Saves model checkpoint.
@@ -67,11 +67,21 @@ def save_checkpoint(data_name, epoch, epochs_since_improvement, decoder, decoder
     :param bleu4: validation BLEU-4 score for this epoch
     :param is_best: is this checkpoint the best so far?
     """
-    state = {'epoch': epoch,
-             'epochs_since_improvement': epochs_since_improvement,
-             'bleu-4': bleu4,
-             'decoder': decoder,
-             'decoder_optimizer': decoder_optimizer}
+    if encoder == None:
+        state = {'epoch': epoch,
+                 'epochs_since_improvement': epochs_since_improvement,
+                 'bleu-4': bleu4,
+                 'decoder': decoder,
+                 'decoder_optimizer': decoder_optimizer}
+    else:
+        state = {'epoch': epoch,
+                 'epochs_since_improvement': epochs_since_improvement,
+                 'bleu-4': bleu4,
+                 'encoder': encoder,
+                 'decoder': decoder,
+                 'encoder_optimizer': encoder_optimizer,
+                 'decoder_optimizer': decoder_optimizer}
+
     filename = '/content/drive/MyDrive'+'/checkpoint_' + data_name + '.pth.tar'
     torch.save(state, filename)
     # If this checkpoint is the best so far, store a copy so it doesn't get overwritten by a worse checkpoint
