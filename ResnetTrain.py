@@ -80,7 +80,7 @@ def main():
         best_bleu4    = checkpoint['bleu-4']
         decoder   = checkpoint['decoder']
         DecoderLSTM_optimizer  = checkpoint['decoder_optimizer']
-        encoder = checkpoint['ecoder']
+        encoder = checkpoint['encoder']
         EncoderResnet_optimizer = checkpoint['encoder_optimizer']
 
     # Move to GPU, if available
