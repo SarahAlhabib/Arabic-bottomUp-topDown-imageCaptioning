@@ -4,7 +4,6 @@ import torch.optim
 from torch.utils.data import DataLoader
 from flickrDataset import Flickr8kDataset
 from utils import *
-from nltk.translate.bleu_score import corpus_bleu
 import torch.nn.functional as F
 from tqdm import tqdm
 from nlgeval import NLGEval
@@ -196,18 +195,11 @@ def evaluate(beam_size):
 
     # Calculate scores
     metrics_dict = nlgeval.compute_metrics(references, hypotheses)
-    bleu_1 = corpus_bleu(references, hypotheses, weights=(1, 0, 0, 0))
-    bleu_2 = corpus_bleu(references, hypotheses, weights=(0, 1, 0, 0))
-    bleu_3 = corpus_bleu(references, hypotheses, weights=(0, 0, 1, 0))
-    bleu_4 = corpus_bleu(references, hypotheses, weights=(0, 0, 0, 1))
-    return bleu_1, bleu_2, bleu_3, bleu_4, metrics_dict
+
+    return metrics_dict
 
 
 if __name__ == '__main__':
     beam_size = 5
-    bleu_1, bleu_2, bleu_3, bleu_4, metrics_dict = evaluate(beam_size)
-    print("bleu-1", bleu_1)
-    print("bleu-2", bleu_2)
-    print("bleu-3", bleu_3)
-    print("bleu-4", bleu_4)
+    metrics_dict = evaluate(beam_size)
     print("metrics_dict", metrics_dict)
