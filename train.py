@@ -341,7 +341,8 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
         refs = list()
         hyp = list()
 
-        df = pd.read_csv("flickr_validate.csv", index_col=[0])
+        #df = pd.read_csv("flickr_validate.csv", index_col=[0])
+        df = pd.read_csv("Flickr8k_text/validate.csv", index_col=[0])
         val_numpy = df.to_numpy()
 
         for word in hyp_numeric:
