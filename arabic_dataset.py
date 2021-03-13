@@ -165,17 +165,17 @@ def create_input_files(file_name):
 def get_captions_dic(split):
     # # get random splits
     # if split == "TRAIN":
-    #     df = pd.read_csv("flickr_train.csv", index_col=[0], header=None)
+    #     df = pd.read_csv("flickr_train.csv", index_col=[0])
     #     captions_numpy = df.to_numpy()
     #     captions_dic = dict(captions_numpy)
 
     # elif split == "VAL":
-    #     df = pd.read_csv("flickr_validate.csv", index_col=[0], header=None)
+    #     df = pd.read_csv("flickr_validate.csv", index_col=[0])
     #     captions_numpy = df.to_numpy()
     #     captions_dic = dict(captions_numpy)
 
     # else:
-    #     df = pd.read_csv("flickr_test.csv", index_col=[0], header=None)
+    #     df = pd.read_csv("flickr_test.csv", index_col=[0])
     #     captions_numpy = df.to_numpy()
     #     captions_dic = dict(captions_numpy)
 
