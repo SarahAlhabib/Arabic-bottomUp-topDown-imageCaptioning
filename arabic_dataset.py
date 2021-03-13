@@ -130,15 +130,31 @@ def create_input_files(file_name):
     captions_dic = get_captions(captions_file_text)
     preprocess_captions(captions_dic)
     add_start_end_to_captions(captions_dic)
-    df = pd.DataFrame(list(captions_dic.items()), columns=['images', 'captions'])
 
-    # split
-    train, validate, test = np.split(df.sample(frac=1, random_state=42),
-                                     [int(.7 * len(df)), int(.8 * len(df))])
+    # # create random splits
+    # df = pd.DataFrame(list(captions_dic.items()), columns=['images', 'captions'])
+
+    # # split
+    # train, validate, test = np.split(df.sample(frac=1, random_state=42),
+    #                                   [int(.7 * len(df)), int(.8 * len(df))])
+
+    # thw original splits
+    train_keys = ((pd.read_csv('Flickr8k_text/Flickr_8k.trainImages.txt', sep='.', header=None)).to_numpy())[:, 0]
+    validate_keys = ((pd.read_csv('Flickr8k_text/Flickr_8k.devImages.txt', sep='.', header=None)).to_numpy())[:, 0]
+    test_keys = ((pd.read_csv('Flickr8k_text/Flickr_8k.testImages.txt', sep='.', header=None)).to_numpy())[:, 0]
+
+    train_values = [captions_dic[key] for key in train_keys]
+    validate_values = [captions_dic[key] for key in validate_keys]
+    test_values = [captions_dic[key] for key in test_keys]
+
+    train = pd.DataFrame(dict(zip(train_keys, train_values)).items())
+    validate = pd.DataFrame(dict(zip(validate_keys, validate_values)).items())
+    test = pd.DataFrame(dict(zip(test_keys, test_values)).items())
+
     # save
-    train.to_csv("flickr_train.csv")
-    validate.to_csv("flickr_validate.csv")
-    test.to_csv("flickr_test.csv")
+    train.to_csv("Flickr8k_text/train.csv")
+    validate.to_csv("Flickr8k_text/validate.csv")
+    test.to_csv("Flickr8k_text/test.csv")
 
     tokenizer = create_tokenizer(captions_dic)
     # save tokenizer object
@@ -147,21 +163,37 @@ def create_input_files(file_name):
 
 
 def get_captions_dic(split):
+    # # get random splits
+    # if split == "TRAIN":
+    #     df = pd.read_csv("flickr_train.csv", index_col=[0], header=None)
+    #     captions_numpy = df.to_numpy()
+    #     captions_dic = dict(captions_numpy)
+
+    # elif split == "VAL":
+    #     df = pd.read_csv("flickr_validate.csv", index_col=[0], header=None)
+    #     captions_numpy = df.to_numpy()
+    #     captions_dic = dict(captions_numpy)
+
+    # else:
+    #     df = pd.read_csv("flickr_test.csv", index_col=[0], header=None)
+    #     captions_numpy = df.to_numpy()
+    #     captions_dic = dict(captions_numpy)
+
+    # get the original splits
     if split == "TRAIN":
-        df = pd.read_csv("flickr_train.csv", index_col=[0])
+        df = pd.read_csv("Flickr8k_text/train.csv", index_col=[0])
         captions_numpy = df.to_numpy()
         captions_dic = dict(captions_numpy)
 
     elif split == "VAL":
-        df = pd.read_csv("flickr_validate.csv", index_col=[0])
+        df = pd.read_csv("Flickr8k_text/validate.csv", index_col=[0])
         captions_numpy = df.to_numpy()
         captions_dic = dict(captions_numpy)
 
     else:
-        df = pd.read_csv("flickr_test.csv", index_col=[0])
+        df = pd.read_csv("Flickr8k_text/test.csv", index_col=[0])
         captions_numpy = df.to_numpy()
         captions_dic = dict(captions_numpy)
-
     return captions_dic
 
 
