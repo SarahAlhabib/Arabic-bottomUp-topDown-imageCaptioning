@@ -182,7 +182,7 @@ def evaluate(beam_size):
             indexes.append(ind)
 
     # creat resutls.csv
-    df = pd.read_csv("flickr_test.csv", index_col=[0])
+    df = pd.read_csv("Flickr8k_text/test.csv", index_col=[0])
     test_numpy = df.to_numpy()
 
     id_list = list()
