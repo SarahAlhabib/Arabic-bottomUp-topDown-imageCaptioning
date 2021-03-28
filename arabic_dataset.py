@@ -110,7 +110,7 @@ def get_vocabulary(cpts):
     return sorted(list(v))
 
 
-def get_frequent_vocabulary(cpts, vocabulary, frequency=5):
+def get_frequent_vocabulary(cpts, vocabulary, frequency=3):
     """retruns a list of all unique words that appeared more than `frequency` times"""
     captions_flattened = [cpt for image_captions in cpts.values() for cpt in image_captions]
     all_captions = ' '.join(captions_flattened)
