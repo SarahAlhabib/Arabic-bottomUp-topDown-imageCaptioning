@@ -16,6 +16,7 @@ import pickle
 from random import randint
 import pandas as pd
 import numpy as np
+import time
 
 caption_file = '/content/Flickr8k.arabic.full.tsv'
 images_features_file = '/content/flickr8k_bottomUp_features.tsv'
@@ -390,4 +391,7 @@ def validate(val_loader, decoder, criterion_ce, criterion_dis, index2word):
 
 
 if __name__ == '__main__':
+    start = time.time()
     main()
+    end = time.time()
+    print("time: ", end - start)
