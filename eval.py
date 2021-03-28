@@ -10,6 +10,7 @@ from nlgeval import NLGEval
 import pickle
 import pandas as pd
 import numpy as np
+import time
 
 # Parameters
 caption_file = '/content/Flickr8k.arabic.full.tsv'
@@ -200,6 +201,9 @@ def evaluate(beam_size):
 
 
 if __name__ == '__main__':
+    start = time.time()
     beam_size = 5
     metrics_dict = evaluate(beam_size)
+    end = time.time()
     print("metrics_dict", metrics_dict)
+    print("time: ", end - start)
