@@ -4,7 +4,6 @@ and https://github.com/poojahira/image-captioning-bottom-up-top-down/blob/master
 """
 import torch
 import torch.optim
-import time
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pack_padded_sequence
