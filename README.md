@@ -3,7 +3,7 @@ Pytorch implementation for Up-Down image captioning model, trained with Arabic d
 
 ## Up-Down Attention Model
 This model combines two types of attention in the following way: k visual features vectors are extracted using Faster R-CNN representing the bottom-up attention since each vector describes a salient region. The extracted features are fed to a two-layered LSTM. The first one represents the top-down attention, and the second is a language model, where the first layer computes the weights for the visual features based on these features and the language model output from the previous time step. The language model outputs a word each time step and the final output for this model is an Arabic descriptive sentence for the input image.
-
+(https://github.com/SarahAlhabib/Arabic-bottomUp-topDown-imageCaptioning/tree/master/readme_images/upDown_model.png)
 ## Results
 | model | bleu-1 | bleu-2 | bleu-3 | bleu-4 | METEOR | ROUGE-L | CIDEr |
 | :----:| :----: | :----: | :----: | :----: | :----: |:----:   | :----: |
