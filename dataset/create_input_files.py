@@ -1,4 +1,4 @@
-from arabic_dataset import create_input_files
+from dataset.arabic_dataset import create_input_files
 
 
 if __name__ == '__main__':

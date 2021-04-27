@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-from arabic_dataset import get_captions_dic, get_tokenizer, tokenize_captions, create_input_files
+from dataset.arabic_dataset import get_captions_dic, get_tokenizer, tokenize_captions
 import numpy as np
 import base64
 from PIL import Image

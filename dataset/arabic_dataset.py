@@ -138,7 +138,7 @@ def create_input_files(file_name):
     # train, validate, test = np.split(df.sample(frac=1, random_state=42),
     #                                   [int(.7 * len(df)), int(.8 * len(df))])
 
-    # thw original splits
+    # the original splits
     train_keys = ((pd.read_csv('Flickr8k_text/Flickr_8k.trainImages.txt', sep='.', header=None)).to_numpy())[:, 0]
     validate_keys = ((pd.read_csv('Flickr8k_text/Flickr_8k.devImages.txt', sep='.', header=None)).to_numpy())[:, 0]
     test_keys = ((pd.read_csv('Flickr8k_text/Flickr_8k.testImages.txt', sep='.', header=None)).to_numpy())[:, 0]
@@ -158,24 +158,24 @@ def create_input_files(file_name):
 
     tokenizer = create_tokenizer(captions_dic)
     # save tokenizer object
-    with open('tokenizer.pickle', 'wb') as handle:
+    with open('dataset/tokenizer.pickle', 'wb') as handle:
         pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def get_captions_dic(split):
     # # get random splits
     # if split == "TRAIN":
-    #     df = pd.read_csv("flickr_train.csv", index_col=[0])
+    #     df = pd.read_csv("refined_Arabic_Flickr8k_text/flickr_train.csv", index_col=[0])
     #     captions_numpy = df.to_numpy()
     #     captions_dic = dict(captions_numpy)
 
     # elif split == "VAL":
-    #     df = pd.read_csv("flickr_validate.csv", index_col=[0])
+    #     df = pd.read_csv("refined_Arabic_Flickr8k_text/flickr_validate.csv", index_col=[0])
     #     captions_numpy = df.to_numpy()
     #     captions_dic = dict(captions_numpy)
 
     # else:
-    #     df = pd.read_csv("flickr_test.csv", index_col=[0])
+    #     df = pd.read_csv("refined_Arabic_Flickr8k_text/flickr_test.csv", index_col=[0])
     #     captions_numpy = df.to_numpy()
     #     captions_dic = dict(captions_numpy)
 
@@ -218,7 +218,7 @@ def create_tokenizer(captions_dic):
 
 def get_tokenizer(captions_dic):
     # load tokenizer object
-    with open('tokenizer.pickle', 'rb') as handle:
+    with open('dataset/tokenizer.pickle', 'rb') as handle:
         tokenizer = pickle.load(handle)
     captions_list = []
     for k, image_captions in captions_dic.items():
