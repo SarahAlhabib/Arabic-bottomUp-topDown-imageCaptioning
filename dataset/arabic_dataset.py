@@ -6,16 +6,13 @@
 
 from pyarabic.araby import strip_tatweel, strip_tashkeel
 import string
-from string import punctuation
 import re
 import keras
 import pandas as pd
-import numpy as np
 import pickle
 
 
-
-class Arabic_preprocessing:
+class ArabicPreprocessing:
 
     def __init__(self):
         
@@ -87,7 +84,7 @@ def preprocess_captions(cpts):
         - remove english characters
         - remove one-character words
     """
-    process_arab = Arabic_preprocessing()
+    process_arab = ArabicPreprocessing()
     for img, cpt in cpts.items():
         processed_captions = [process_arab.preprocess_arabic_text(c) for c in cpt]
         cpts[img] = processed_captions
@@ -237,10 +234,8 @@ def tokenize_captions(captions_list, tokenizer, max_len):
     captions_list = captions_list.replace("'", "")
     captions_list = captions_list.strip('][').split(', ')
     numeralize = tokenizer.texts_to_sequences(captions_list)
-    #print(numeralize)
     captions_lengths = [len(i) for i in numeralize]
     pad_sequences = keras.preprocessing.sequence.pad_sequences(numeralize, maxlen=max_len, padding='post')
-    #print(pad_sequences)
     return pad_sequences, captions_lengths
 
 

@@ -11,12 +11,12 @@ import numpy as np
 import time
 
 # Parameters
-caption_file = '/content/Flickr8k.arabic.full.tsv'
-images_features_file = '/content/flickr8k_bottomUp_features.tsv'
-embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
+caption_file = 'Flickr8k.arabic.full.tsv'
+images_features_file = 'flickr8k_bottomUp_features.tsv'
+embeddings_file = 'full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
 
-checkpoint_file = "/content/drive/MyDrive/checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar" # model checkpoint
+checkpoint_file = None #"checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar" # model checkpoint
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
 # cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 

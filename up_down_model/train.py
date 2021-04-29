@@ -17,9 +17,9 @@ import pandas as pd
 import numpy as np
 import time
 
-caption_file = '/content/Flickr8k.arabic.full.tsv'
-images_features_file = '/content/flickr8k_bottomUp_features.tsv'
-embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
+caption_file = 'Flickr8k.arabic.full.tsv'
+images_features_file = 'flickr8k_bottomUp_features.tsv'
+embeddings_file = 'full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
 
 # Model parameters
@@ -39,7 +39,7 @@ decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 best_bleu4 = 0.  # BLEU-4 score right now
 print_freq = 100  # print training/validation stats every __ batches
-checkpoint = None  # "/content/drive/MyDrive/checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar" # path to checkpoint, None if none
+checkpoint = None  # "checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar" # path to checkpoint, None if none
 
 
 def main():

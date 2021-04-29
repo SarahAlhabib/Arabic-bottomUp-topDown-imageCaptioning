@@ -2,7 +2,6 @@ import torch.optim
 from torch.utils.data import DataLoader
 from dataset.flickrDataset import Flickr8kDataset
 from utils import *
-from nltk.translate.bleu_score import corpus_bleu
 import torch.nn.functional as F
 from tqdm import tqdm
 from nlgeval import NLGEval
@@ -11,12 +10,11 @@ import pandas as pd
 import numpy as np
 
 # Parameters
-caption_file = '/content/Flickr8k.arabic.full.tsv'
-images_features_file = '/content/flickr8k_bottomUp_features.tsv'
-embeddings_file = '/content/full_grams_cbow_300_twitter.mdl'
+embeddings_file = 'full_grams_cbow_300_twitter.mdl'
 data_name = 'Arabic_flickr8k_3_cap_per_img'
+imgs_file = 'images'
 
-checkpoint_file = "/content/drive/MyDrive/checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar"  # model checkpoint
+checkpoint_file = None #"checkpoint_Arabic_flickr8k_3_cap_per_img.pth.tar"  # model checkpoint
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
 # cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 
@@ -28,18 +26,15 @@ word_map = tokenizer.word_index
 index2word = {v: k for k, v in word_map.items()}
 vocab_size = len(word_map.keys())
 
-# Read features
-features = pd.read_csv(images_features_file, sep='\t')
-features = features.to_numpy()
-print("done downloading")
-
 # Load model
 # torch.nn.Module.dump_patches = True #line added
 checkpoint = torch.load(checkpoint_file, map_location=device)
+encoder = checkpoint['encoder']
+encoder = encoder.to(device)
+encoder.eval()
 decoder = checkpoint['decoder']
 decoder = decoder.to(device)
 decoder.eval()
-# not consider about encoder phase
 nlgeval = NLGEval()  # loads the evaluator
 batch_size = 1
 workers = 1  # for data-loading; right now, only 1 works with h5py
@@ -52,7 +47,7 @@ def evaluate(beam_size):
     :return: Official MSCOCO evaluator scores - bleu4, cider, rouge, meteor
     """
     # DataLoader
-    Test_loader = DataLoader(Flickr8kDataset(imgs=features, split='TEST'),
+    Test_loader = DataLoader(Flickr8kDataset(imgs=imgs_file, split='TEST', withEncoder=True),
                              batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
     # Lists to store references (true captions), and hypothesis (prediction) for each image
@@ -70,9 +65,9 @@ def evaluate(beam_size):
 
         # Move to GPU device, if available
         imgs = imgs.to(device)  # (1, 3, 256, 256)
-        imgs_mean = imgs.mean(1)
-        imgs_mean = imgs_mean.expand(k, 2048)
-        # compute mean here instead of normalize before
+        features = encoder(imgs)
+        features = features.expand(k, 512)
+
         # Tensor to store top k previous words at each step; now they're just <start>
         k_prev_words = torch.LongTensor([[word_map['<START>']]] * k).to(device)  # (k, 1)
 
@@ -92,13 +87,13 @@ def evaluate(beam_size):
 
         # two LSTM so two decoder
         # s is a number less than or equal to k, because sequences are removed from this process once they hit <end>
-        h1 = decoder.att1(imgs_mean)  ## change if you use flatten
+        h1 = features.to(device)  ## change if you use flatten
 
         while True:
 
             embeddings = decoder.embedding(k_prev_words).squeeze(1)  # (s, embed_dim)
-            h1, c1 = decoder.language_model(embeddings, (h1, c1))
-            scores = F.log_softmax(decoder.word(h1), dim=1)  # (s, vocab_size)
+            h1, c1 = decoder.lstm(embeddings, (h1, c1))
+            scores = F.log_softmax(decoder.linear(h1), dim=1)  # (s, vocab_size)
 
             # Add
             scores = top_k_scores.expand_as(scores) + scores  # (s, vocab_size)
@@ -113,7 +108,7 @@ def evaluate(beam_size):
             # Convert unrolled indices to actual indices of scores
             prev_word_inds = top_k_words // vocab_size  # (s)
             next_word_inds = top_k_words % vocab_size  # (s)
-            
+
             prev_word_inds = torch.LongTensor(prev_word_inds.to("cpu")).to(device)
             next_word_inds = torch.LongTensor(next_word_inds.to("cpu")).to(device)
 
@@ -137,8 +132,8 @@ def evaluate(beam_size):
             seqs = seqs[incomplete_inds]
             h1 = h1[prev_word_inds[incomplete_inds]]
             c1 = c1[prev_word_inds[incomplete_inds]]
-            
-            imgs_mean = imgs_mean[prev_word_inds[incomplete_inds]]
+
+            features = features[prev_word_inds[incomplete_inds]]
             top_k_scores = top_k_scores[incomplete_inds].unsqueeze(1)
             k_prev_words = next_word_inds[incomplete_inds].unsqueeze(1)
 
@@ -149,7 +144,7 @@ def evaluate(beam_size):
         if len(complete_seqs_scores) > 0:
             i = complete_seqs_scores.index(max(complete_seqs_scores))
             seq = complete_seqs[i]
-        # some thing diffrent
+
         # References
         img_caps = allcaps[0].tolist()
         img_captions = list(
@@ -162,7 +157,7 @@ def evaluate(beam_size):
 
         # Hypotheses
         hypothesis = (
-        [index2word[w] for w in seq if w not in {word_map['<START>'], word_map['<END>'], word_map['<PAD>']}])
+            [index2word[w] for w in seq if w not in {word_map['<START>'], word_map['<END>'], word_map['<PAD>']}])
         hypothesis = ' '.join(hypothesis)
         # print(hypothesis)
         hypotheses.append(hypothesis)
@@ -179,26 +174,18 @@ def evaluate(beam_size):
     for index in indexes:
         id_list.append(test_numpy[index, 0])
 
-
     results = [id_list] + [hypotheses] + [references]
     df = pd.DataFrame(np.array(results).T, columns=["id", "hypotheses", "reference"])
     df.to_csv("results.csv")
 
     # Calculate scores
     metrics_dict = nlgeval.compute_metrics(references, hypotheses)
-    bleu_1 = corpus_bleu(references, hypotheses, weights=(1, 0, 0, 0))
-    bleu_2 = corpus_bleu(references, hypotheses, weights=(0, 1, 0, 0))
-    bleu_3 = corpus_bleu(references, hypotheses, weights=(0, 0, 1, 0))
-    bleu_4 = corpus_bleu(references, hypotheses, weights=(0, 0, 0, 1))
-    return bleu_1, bleu_2, bleu_3, bleu_4, metrics_dict
+
+    return metrics_dict
 
 
 if __name__ == '__main__':
-    beam_size = 5
-    # metrics_dict = evaluate(beam_size)
-    bleu_1, bleu_2, bleu_3, bleu_4, metrics_dict= evaluate(beam_size)
-    print("bleu-1", bleu_1)
-    print("bleu-2", bleu_2)
-    print("bleu-3", bleu_3)
-    print("bleu-4", bleu_4)
+    beam_size = 3
+
+    metrics_dict = evaluate(beam_size)
     print(metrics_dict)

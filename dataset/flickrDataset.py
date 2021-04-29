@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 class Flickr8kDataset(Dataset):
     def __init__(self, imgs, split='TRAIN', withEncoder=False):
         """
-        :param features: images' features numpy array
+        :param imgs: images' features numpy array or images file if withEncoder
         :param split: data split TRAIN, VAL, or TEST
         """
 
@@ -67,6 +67,13 @@ class Flickr8kDataset(Dataset):
         return decoded_features_tensor
 
     def numeralize_captions(self, id_name, i):
+        """
+        Gets an normalized caption by id and index
+
+        :param id_name: name of targeted image
+        :param i: caption index in {0,1,2}
+        :return: an encoded image
+        """
         captions_text = self.captions_dic[id_name]
         all_captions, caplens = tokenize_captions(captions_text, self.tokenizer, self.max_len)
         caption = torch.LongTensor(all_captions[i])
@@ -91,7 +98,7 @@ class Flickr8kDataset(Dataset):
 
         :param index: index of item in IDs list
 
-        :return: a sample of data as a dict
+        :return: a sample of data
         """
         list_id = list(self.captions_dic)
 
