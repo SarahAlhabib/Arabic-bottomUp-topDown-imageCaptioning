@@ -6,6 +6,7 @@ This model combines two types of attention in the following way: k visual featur
 <p>
 <img src="UpDown_model.jpg"/>
 </p>
+
 ## Results
 | model | bleu-1 | bleu-2 | bleu-3 | bleu-4 | METEOR | ROUGE-L | CIDEr |
 | :----:| :----: | :----: | :----: | :----: | :----: |:----:   | :----: |
