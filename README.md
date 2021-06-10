@@ -21,3 +21,6 @@ This model combines two types of attention in the following way: k visual featur
 ## Evaluation
 
 ## References 
+This project code is adapted with thanks from:
+- [https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning/blob/master/train.py]()
+- [https://github.com/poojahira/image-captioning-bottom-up-top-down/blob/master/train.py]()
